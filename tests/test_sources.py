@@ -150,3 +150,21 @@ def test_comment_flag_survives_the_ledger_round_trip():
     _, comment = parse_hn(load_fixture("hn_search_by_date.json"))
     assert Post.from_json(comment.to_json()).is_comment
     assert Post.from_json({"source": "hn", "url": "u", "title": "t"}).is_comment is False
+
+
+async def test_hacker_news_requests_are_spaced_out(monkeypatch):
+    import asyncio
+    import time
+
+    monkeypatch.setattr(sources.HN_GATE, "gap", 0.2)
+    monkeypatch.setattr(sources.HN_GATE, "next_at", 0.0)
+    times: list[float] = []
+
+    def answer(request: httpx.Request) -> httpx.Response:
+        times.append(time.monotonic())
+        return httpx.Response(200, json={"hits": []})
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(answer)) as client:
+        await asyncio.gather(*(sources.search_hn(client, f"phrase {i}", NOW) for i in range(3)))
+    gaps = [b - a for a, b in zip(times, times[1:], strict=False)]
+    assert len(times) == 3 and all(g >= 0.18 for g in gaps), gaps

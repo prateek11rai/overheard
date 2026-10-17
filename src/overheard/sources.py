@@ -1,5 +1,8 @@
+import asyncio
 import html
 import re
+import threading
+import time
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Any, Literal
@@ -11,6 +14,32 @@ SERPAPI_SEARCH = "https://serpapi.com/search.json"
 SERPAPI_ACCOUNT = "https://serpapi.com/account.json"
 HN_SEARCH = "https://hn.algolia.com/api/v1/search_by_date"
 HN_ITEM = "https://news.ycombinator.com/item?id="
+
+
+class RequestGate:
+    """Spaces out requests to one service across every task in this process."""
+
+    def __init__(self, gap: float) -> None:
+        """Create the gate.
+
+        Args:
+            gap: Seconds between the starts of two requests.
+        """
+        self.gap = gap
+        self.next_at = 0.0
+        self._lock = threading.Lock()
+
+    async def turn(self) -> None:
+        """Wait for this request's slot."""
+        with self._lock:
+            now = time.monotonic()
+            start = max(now, self.next_at)
+            self.next_at = start + self.gap
+        if start > now:
+            await asyncio.sleep(start - now)
+
+
+HN_GATE = RequestGate(1.0)
 
 _REDDIT_THREAD = re.compile(r"^/r/([A-Za-z0-9_]+)/comments/[A-Za-z0-9]+")
 _TITLE_SUFFIX = re.compile(r"\s*(?::\s*r/[A-Za-z0-9_]+|-\s*Reddit|\|\s*Reddit)\s*$")
@@ -313,6 +342,7 @@ async def search_hn(client: httpx.AsyncClient, phrase: str, since: datetime) -> 
         "numericFilters": f"created_at_i>{int(since.timestamp())}",
         "hitsPerPage": "50",
     }
+    await HN_GATE.turn()
     try:
         r = await client.get(HN_SEARCH, params=params, timeout=30)
     except httpx.HTTPError as exc:
