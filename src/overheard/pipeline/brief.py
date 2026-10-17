@@ -215,7 +215,11 @@ def part_of_day(when: datetime) -> str:
 
 
 async def brief_for(
-    db: Database, product: Product, tz: str = "UTC", now: datetime | None = None
+    db: Database,
+    product: Product,
+    tz: str = "UTC",
+    now: datetime | None = None,
+    since: datetime | None = None,
 ) -> Brief:
     """Gather the brief for one product from what the database says now.
 
@@ -224,6 +228,8 @@ async def brief_for(
         product: The product.
         tz: Timezone for the times shown.
         now: Now (for tests).
+        since: Only posts found at or after this time (the morning email uses the run's
+            start, so it shows what is new rather than everything still open).
 
     Returns:
         The brief.
@@ -233,6 +239,8 @@ async def brief_for(
     now = now or datetime.now(UTC)
     zone = ZoneInfo(tz)
     posts = await db.open_posts(product.id)
+    if since is not None:
+        posts = [p for p in posts if p.found_at >= since]
     cards = [card_for(p, now) for p in posts]
     asks = [c for c in cards if c.post.label == "ask"]
     pains = [c for c in cards if c.post.label == "pain"]

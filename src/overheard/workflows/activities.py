@@ -439,7 +439,9 @@ class Activities:
         if product is None:
             return "product gone"
         tz = await self.db.get_setting("timezone") or local_timezone()
-        brief = await pipeline.brief_for(self.db, product, tz)
+        run = await self.db.run(args.run_id) if args.run_id else None
+        since = run.started_at if run is not None else None
+        brief = await pipeline.brief_for(self.db, product, tz, since=since)
         text = await mail.deliver(self.settings, product, brief, run_key=args.run_key)
         await self.db.add_step(
             args.run_id,

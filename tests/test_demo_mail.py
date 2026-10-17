@@ -76,3 +76,17 @@ async def test_email_off_keeps_the_digest_in_the_app(test_settings):
     product = make_product(quiet_day_email=True)
     empty = pipeline.Brief(product, "Nothing new", "", 0, [], [], 0, [], [], 0, "", [])
     assert await mail.deliver(test_settings, product, empty) == "Email off · digest in the app"
+
+
+async def test_the_email_covers_only_posts_found_in_this_run(db, test_settings):
+    from datetime import UTC, datetime, timedelta
+
+    products = await demo.load(db, test_settings)
+    product = products["demo-mealwise"]
+    everything = await pipeline.brief_for(db, product, "UTC")
+    assert everything.total == 7
+    later = datetime.now(UTC) + timedelta(minutes=1)
+    nothing_new = await pipeline.brief_for(db, product, "UTC", since=later)
+    assert nothing_new.total == 0
+    assert nothing_new.headline == "Nothing new about Mealwise since yesterday."
+    assert await mail.deliver(test_settings, product, nothing_new) == "Quiet morning · no email"
