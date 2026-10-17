@@ -46,3 +46,8 @@ Rewrite `docs/devto-post.md` as a full draft in the DEV template (spec §14, arc
 ## Answers
 
 (The planner adds answers to your questions here.)
+
+**A1 (planner, seen on GitHub) · tildes render as strikethrough.** On github.com the README line "PainOnSocial $19–49/mo (~$1.3k MRR on TrustMRR), Leadverse (~$4.0k MRR)…" shows struck through, because GitHub reads a pair of single `~` as strikethrough. Write "about $1.3k" instead of `~$1.3k` everywhere (README, devto-post, release notes); grep for `~` followed by a digit or `$`.
+
+**A0 (from the owner) · local paths inside the repo.** The README and every Markdown file in the repo reference repo files by **relative path** (`docs/img/banner.png`, `docs/img/diagrams/architecture.png`, `docs/demo/…`), never by a GitHub URL. Absolute `raw.githubusercontent.com` URLs are only for text that is published outside the repo: `docs/devto-post.md` (DEV can't see repo files). For the release notes, use relative links for docs and say the banner will be attached to the release as an asset by the planner. Fix anything already written that breaks this.
+
