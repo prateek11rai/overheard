@@ -13,6 +13,7 @@ from overheard.ai import (
     role_models,
 )
 from overheard.settings import is_timezone
+from overheard.web.context import bar_state
 from overheard.web.security import csv_safe, parse_emails, slugify
 from overheard.web.updates import Web
 
@@ -176,9 +177,9 @@ def register(app: FastAPI, web: Web) -> None:
 
     @app.get("/api/bar", response_class=HTMLResponse)
     async def bar_poll(request: Request, state: str = "") -> Response:
-        ctx = await web._chrome(request)
-        if ctx["bar_state"] == state:
+        if bar_state(await web._db().running_runs()) == state:
             return Response(status_code=204)
+        ctx = await web._chrome(request)
         return web._fragment(request, None, ctx, oob=["_bar.html"], close_popovers=False)
 
     @app.get("/api/brief/{slug}", response_class=HTMLResponse)

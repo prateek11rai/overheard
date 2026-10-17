@@ -556,22 +556,32 @@ def test_the_menu_flips_back_when_a_check_now_finishes(client):
             else:
                 await db.finish_run((await db.run_by_workflow("check-tidyshelf-2")).id, "done")
 
+    idle = client.get("/p/tidyshelf").text
+    idle_state = re.search(r'id="bar-state" name="state" value="([^"]+)"', idle).group(1)
     asyncio.run(run("start"))
     page = client.get("/p/tidyshelf").text
-    bar = page.split("</header>")[0]
+    bar, rest = page.split("</header>", 1)
     assert "Checking…" in bar
-    poll = re.search(r'hx-get="(/api/bar\?state=[^"]+)" hx-trigger="every 3s"', bar)
-    assert poll, "a bar drawn while a run is going polls for the end of it"
-    url = poll.group(1).replace("&amp;", "&")
-    assert client.get(url, headers=ask("/p/tidyshelf")).status_code == 204
+    # The poller sits outside the bar, so swapping the bar never cuts off its request.
+    assert 'id="bar-poll"' in rest and 'id="bar-poll"' not in bar
+    assert re.search(r'id="bar-poll"[^>]*hx-get="/api/bar"[^>]*hx-trigger="every 3s"', rest)
+    assert 'hx-include="#bar-state"' in rest
+    state = re.search(r'id="bar-state" name="state" value="([^"]+)"', bar).group(1)
+    assert state != idle_state
+    assert client.get(f"/api/bar?state={state}", headers=ask("/p/tidyshelf")).status_code == 204
+    r = client.get(f"/api/bar?state={idle_state}", headers=ask("/p/tidyshelf"))
+    assert r.status_code == 200 and "Checking…" in r.text
 
     asyncio.run(run("finish"))
-    r = client.get(url, headers=ask("/p/tidyshelf"))
+    r = client.get(f"/api/bar?state={state}", headers=ask("/p/tidyshelf"))
     assert r.status_code == 200
     assert 'id="bar" hx-swap-oob="true"' in r.text
     assert "Check now" in r.text and "Checking…" not in r.text
-    assert "/api/bar?state=" not in r.text
+    assert f'value="{idle_state}"' in r.text and 'id="bar-poll"' not in r.text
     assert "closePopovers" not in r.headers.get("HX-Trigger", "")
+    assert (
+        client.get(f"/api/bar?state={idle_state}", headers=ask("/p/tidyshelf")).status_code == 204
+    )
 
 
 def test_a_product_never_checked_says_so_and_refreshes(client):

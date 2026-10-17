@@ -61,17 +61,18 @@ def oob_target_on(template: str, path: str) -> bool:
     return True if check is None else check(path)
 
 
-def bar_state(morning_running: bool, checking: list[int]) -> str:
+def bar_state(running: list[Any]) -> str:
     """What the bar shows as running, so a poll can tell when that changes.
 
     Args:
-        morning_running: Whether a morning run is going.
-        checking: Ids of the products being checked.
+        running: The runs still going.
 
     Returns:
         A short URL-safe token.
     """
-    return ("m" if morning_running else "c") + "-".join(str(i) for i in sorted(checking))
+    morning = any(r.kind == "morning" for r in running)
+    checks = sorted({r.product_id for r in running if r.kind == "check" and r.product_id})
+    return ("m" if morning else "c") + "-".join(str(i) for i in checks)
 
 
 class WebCore:
@@ -211,7 +212,7 @@ class WebCore:
             "title_count": count,
             "temporal_ui": self.settings.temporal_ui_url,
             "busy": busy,
-            "bar_state": bar_state(morning_running, [t["id"] for t in tabs if t["checking"]]),
+            "bar_state": bar_state(running),
             "tz_name": zone.key,
             "tz_choices": timezone_choices(self.settings.default_timezone(), zone.key),
         }

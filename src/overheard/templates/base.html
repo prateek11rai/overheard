@@ -11,7 +11,7 @@
 <script src="/static/app.js?v={{ static_version }}" defer></script>
 </head>
 <body{% block body_attrs %}{% endblock %}>
-{% block bar %}{% include "_bar.html" %}{% endblock %}
+{% block bar %}{% include "_bar.html" %}<span id="bar-poll" hidden hx-get="/api/bar" hx-trigger="every 3s" hx-include="#bar-state" hx-swap="none"></span>{% endblock %}
 <main class="wrap{% block main_class %}{% endblock %}" id="main"{% block main_attrs %}{% endblock %}{% if done_message %} data-toast="{{ done_message }}"{% endif %}>
 {% block main %}{% endblock %}
 </main>
