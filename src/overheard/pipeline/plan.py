@@ -2,7 +2,7 @@ import calendar
 import math
 from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import UTC, date, datetime
 from typing import Literal
 
 from overheard.db import Database
@@ -68,6 +68,117 @@ def days_left_in_month(today: date) -> int:
     return calendar.monthrange(today.year, today.month)[1] - today.day + 1
 
 
+@dataclass
+class Budget:
+    """How many Reddit searches a day the SerpApi plan allows."""
+
+    plan_searches: int
+    searches_left: int
+    reserve: int
+    per_day: int
+    days_left: int
+    month_days: int
+
+    def projected(self, phrases: int) -> int:
+        """Searches a month of one search per phrase per day would use.
+
+        Args:
+            phrases: Phrases searched on Reddit.
+
+        Returns:
+            phrases × days in this month.
+        """
+        return phrases * self.month_days
+
+    def fits(self, phrases: int) -> bool:
+        """Whether every phrase can be searched every day until the month ends.
+
+        Args:
+            phrases: Phrases searched on Reddit.
+
+        Returns:
+            True when one search per phrase per day fits.
+        """
+        return phrases <= self.per_day
+
+
+def today_in(tz: str, now: datetime | None = None) -> date:
+    """Today's date in the schedule's timezone.
+
+    Args:
+        tz: IANA timezone.
+        now: Now (for tests).
+
+    Returns:
+        The local date.
+    """
+    from zoneinfo import ZoneInfo
+
+    return (now or datetime.now(UTC)).astimezone(ZoneInfo(tz)).date()
+
+
+def reddit_budget(
+    account: SerpApiAccount | None,
+    today: date,
+    *,
+    used_today: int = 0,
+    used_month: int = 0,
+    daily_cap: int | None = None,
+    monthly_cap: int | None = None,
+    scheduled: bool = True,
+) -> Budget | None:
+    """The one place that turns the SerpApi plan into searches per day.
+
+    The planner, Settings, the add-product badge and the ▾ menu all use it, so they agree.
+    The 10 % reserve is kept back only for scheduled runs; Run now, Check now and first
+    checks may use it.
+
+    Args:
+        account: SerpApi plan numbers, or None without a key.
+        today: Today in the schedule's timezone.
+        used_today: Reddit searches already spent today.
+        used_month: Reddit searches already spent this month.
+        daily_cap: Optional hard cap per day.
+        monthly_cap: Optional hard cap per month.
+        scheduled: Whether the reserve is kept back.
+
+    Returns:
+        The budget, or None without a SerpApi account.
+    """
+    if account is None:
+        return None
+    reserve = math.ceil(account.plan_searches * RESERVE) if scheduled else 0
+    available = account.searches_left - reserve
+    if monthly_cap is not None:
+        available = min(available, monthly_cap - used_month)
+    days_left = days_left_in_month(today)
+    per_day = max(0, available) // days_left
+    if daily_cap is not None:
+        per_day = min(per_day, max(0, daily_cap - used_today))
+    return Budget(
+        plan_searches=account.plan_searches,
+        searches_left=account.searches_left,
+        reserve=reserve,
+        per_day=per_day,
+        days_left=days_left,
+        month_days=calendar.monthrange(today.year, today.month)[1],
+    )
+
+
+def phrase_cost(phrases: Sequence[str], reddit_on: bool, has_key: bool) -> int:
+    """Reddit searches one check of a product spends (Hacker News is free).
+
+    Args:
+        phrases: The product's phrases.
+        reddit_on: Whether the product listens on Reddit.
+        has_key: Whether a SerpApi key is set.
+
+    Returns:
+        The number of searches.
+    """
+    return len(phrases) if reddit_on and has_key else 0
+
+
 def make_plan(
     products: Sequence[PlanInput],
     account: SerpApiAccount | None,
@@ -78,13 +189,14 @@ def make_plan(
     last_searched: dict[tuple[int, str], date] | None = None,
     daily_cap: int | None = None,
     monthly_cap: int | None = None,
-    reserve: float = RESERVE,
+    scheduled: bool = True,
 ) -> SearchPlan:
     """Decide which phrases get a Reddit search this morning.
 
     One Reddit search per phrase per morning if phrases × days left fits the searches left
-    (minus a reserve for Run now and first checks); otherwise phrases take turns, least
-    recently searched first. Hacker News is free and always searches every phrase.
+    (scheduled runs keep a reserve for Run now and first checks); otherwise phrases take
+    turns, least recently searched first. Hacker News is free and always searches every
+    phrase. The numbers come from `reddit_budget`, the same function Settings uses.
 
     Args:
         products: Active products.
@@ -95,7 +207,7 @@ def make_plan(
         last_searched: When each (product id, phrase) was last searched.
         daily_cap: Optional hard cap per day.
         monthly_cap: Optional hard cap per month.
-        reserve: Share of the plan kept back.
+        scheduled: Whether this is the scheduled morning run (keeps the reserve).
 
     Returns:
         The plan.
@@ -118,12 +230,16 @@ def make_plan(
 
     if account is None:
         return hn_only("off", "no SerpApi key")
-    available = account.searches_left - math.ceil(account.plan_searches * reserve)
-    if monthly_cap is not None:
-        available = min(available, monthly_cap - used_month)
-    per_day = max(0, available) // days_left_in_month(today)
-    if daily_cap is not None:
-        per_day = min(per_day, max(0, daily_cap - used_today))
+    budget = reddit_budget(
+        account,
+        today,
+        used_today=used_today,
+        used_month=used_month,
+        daily_cap=daily_cap,
+        monthly_cap=monthly_cap,
+        scheduled=scheduled,
+    )
+    per_day = budget.per_day if budget else 0
     if total and per_day <= 0:
         return hn_only("used_up", "search plan used up")
 

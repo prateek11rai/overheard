@@ -91,7 +91,9 @@ class Activities:
         )
         return account
 
-    async def _plan(self, products: list, reddit: bool) -> pipeline.SearchPlan:
+    async def _plan(
+        self, products: list, reddit: bool, scheduled: bool = True
+    ) -> pipeline.SearchPlan:
         s = self.settings
         today = await self._today()
         async with httpx.AsyncClient() as client:
@@ -108,6 +110,7 @@ class Activities:
             last_searched=await self.db.last_searched(),
             daily_cap=s.serpapi_daily_cap,
             monthly_cap=s.serpapi_monthly_cap,
+            scheduled=scheduled,
         )
 
     async def _record_plan(self, run_id: int, plan: pipeline.SearchPlan) -> None:
@@ -141,7 +144,7 @@ class Activities:
         products = [p for p in await self.db.products() if not p.demo and not p.paused]
         if await self.db.get_setting("paused_all", False):
             products = []
-        plan = await self._plan(products, args.reddit)
+        plan = await self._plan(products, args.reddit, scheduled=args.trigger == "schedule")
         run_id = await self.db.upsert_run(args.workflow_id, "morning", None, plan.reddit_searches)
         for p in plan.products:
             p.run_key, p.run_id = args.workflow_id, run_id
@@ -168,7 +171,7 @@ class Activities:
                 run_id, "demo", "Demo product · not checked", "ok", 0, 1, product.id
             )
             return PlanResult(run_id, args.workflow_id, [], "off", "demo product · not checked")
-        plan = await self._plan([product], True)
+        plan = await self._plan([product], True, scheduled=False)
         await self.db.upsert_run(args.workflow_id, "check", product.id, plan.reddit_searches)
         for p in plan.products:
             p.run_key, p.run_id = args.workflow_id, run_id

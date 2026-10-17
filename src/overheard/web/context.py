@@ -1,4 +1,5 @@
 import asyncio
+import calendar
 import json
 import re
 import time
@@ -21,6 +22,7 @@ from overheard.ai import (
 )
 from overheard.db import Database, Product
 from overheard.settings import Settings, local_timezone
+from overheard.sources import SerpApiAccount
 from overheard.web.security import parse_emails
 
 HERE = Path(__file__).parent.parent
@@ -112,9 +114,10 @@ class Web:
         return m.group(1) if m else None
 
     def _reddit_cost(self, product: Product) -> int:
-        if self.settings.serpapi_api_key is None or not product.reddit_on or product.demo:
-            return 0
-        return len(product.phrases)
+        has_key = self.settings.serpapi_api_key is not None
+        return pipeline.phrase_cost(
+            product.phrases, product.reddit_on and not product.demo, has_key
+        )
 
     async def _temporal_or_none(self) -> Any:
         if self.state.get("temporal_down_until", 0.0) > time.monotonic():
@@ -366,7 +369,8 @@ class Web:
 
     def _phrase_badge(self, phrases: list[str], sources: str) -> str:
         n = len(phrases)
-        per_day = n if sources == "reddit+hn" and self.settings.serpapi_api_key is not None else 0
+        has_key = self.settings.serpapi_api_key is not None
+        per_day = pipeline.phrase_cost(phrases, sources == "reddit+hn", has_key)
         return (
             f"{n} phrase{'s' if n != 1 else ''} · {per_day} search{'es' if per_day != 1 else ''}"
             " a day"
@@ -479,31 +483,42 @@ class Web:
         }
 
     async def _reddit_ctx(self) -> dict[str, Any]:
-        products = [p for p in await self._db().products() if not p.paused and p.reddit_on]
-        phrases = sum(len(p.phrases) for p in products)
-        today = datetime.now(ZoneInfo(await self._tz())).date()
-        import calendar
-
-        days = calendar.monthrange(today.year, today.month)[1]
-        account = await self._db().get_setting("serpapi_account")
+        db = self._db()
+        products = await db.products()
+        real = [p for p in products if not p.demo]
+        pool = real or [p for p in products if p.demo]
+        listening = [p for p in pool if not p.paused and p.reddit_on]
+        phrases = sum(len(p.phrases) for p in listening)
+        today = pipeline.today_in(await self._tz())
         has_key = self.settings.serpapi_api_key is not None
+        stored = await db.get_setting("serpapi_account")
+        account = None
+        if has_key and stored:
+            account = SerpApiAccount(
+                plan_searches=int(stored["plan_searches"]),
+                searches_left=int(stored["searches_left"]),
+                this_month_usage=int(stored.get("this_month_usage", 0)),
+            )
+        budget = pipeline.reddit_budget(
+            account,
+            today,
+            used_today=await db.reddit_used(today),
+            used_month=await db.reddit_used(today.replace(day=1)),
+            daily_cap=self.settings.serpapi_daily_cap,
+            monthly_cap=self.settings.serpapi_monthly_cap,
+        )
+        days = calendar.monthrange(today.year, today.month)[1]
         projected = phrases * days
-        plan = account["plan_searches"] if account and has_key else None
-        if plan:
-            left = account["searches_left"] - round(plan * pipeline.RESERVE)
-            days_left = pipeline.days_left_in_month(today)
-            fits = phrases * days_left <= max(left, 0)
-            meter = min(100, round(100 * projected / plan)) if plan else 0
-        else:
-            fits, meter = None, 0
+        plan = budget.plan_searches if budget else None
         return {
             "phrases": phrases,
             "days": days,
             "projected": projected,
             "plan": plan,
-            "fits": fits,
-            "meter": meter,
+            "fits": budget.fits(phrases) if budget else None,
+            "meter": min(100, round(100 * projected / plan)) if plan else 0,
             "has_key": has_key,
+            "demo_only": not real and bool(pool),
         }
 
     async def _settings_ctx(self) -> dict[str, Any]:

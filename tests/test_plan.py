@@ -91,3 +91,45 @@ def test_used_up_plan_falls_back_to_hacker_news():
     assert plan.mode == "used_up"
     assert plan.reddit_searches == 0
     assert plan.products[0].hn_phrases == ["a1", "a2", "a3", "a4", "a5"]
+
+
+def test_today_follows_the_schedule_timezone_across_a_month_boundary():
+    from datetime import UTC, datetime
+
+    from overheard.pipeline import today_in
+
+    evening_utc = datetime(2026, 10, 31, 20, 0, tzinfo=UTC)
+    assert today_in("UTC", evening_utc) == date(2026, 10, 31)
+    assert today_in("Asia/Kolkata", evening_utc) == date(2026, 11, 1)
+
+
+def test_one_budget_function_at_a_month_boundary():
+    from overheard.pipeline import reddit_budget
+
+    acc = SerpApiAccount(plan_searches=250, searches_left=40, this_month_usage=210)
+    last_day = reddit_budget(acc, date(2026, 10, 31))
+    assert (last_day.days_left, last_day.reserve, last_day.per_day) == (1, 25, 15)
+    manual = reddit_budget(acc, date(2026, 10, 31), scheduled=False)
+    assert (manual.reserve, manual.per_day) == (0, 40)
+    fresh = SerpApiAccount(plan_searches=250, searches_left=250, this_month_usage=0)
+    first_day = reddit_budget(fresh, date(2026, 11, 1))
+    assert (first_day.days_left, first_day.month_days, first_day.per_day) == (30, 30, 7)
+    assert first_day.projected(7) == 210
+    assert first_day.fits(7) and not first_day.fits(8)
+    assert reddit_budget(None, date(2026, 11, 1)) is None
+
+
+def test_the_reserve_is_for_scheduled_runs_only():
+    acc = SerpApiAccount(plan_searches=250, searches_left=27, this_month_usage=223)
+    scheduled = make_plan(products(), acc, date(2026, 10, 31))
+    assert scheduled.mode == "rotate" and scheduled.per_day == 2
+    manual = make_plan(products(), acc, date(2026, 10, 31), scheduled=False)
+    assert manual.mode == "every" and manual.per_day == 27 and manual.reddit_searches == 7
+
+
+def test_phrase_cost_is_shared():
+    from overheard.pipeline import phrase_cost
+
+    assert phrase_cost(["a", "b", "c"], reddit_on=True, has_key=True) == 3
+    assert phrase_cost(["a", "b", "c"], reddit_on=False, has_key=True) == 0
+    assert phrase_cost(["a", "b", "c"], reddit_on=True, has_key=False) == 0
