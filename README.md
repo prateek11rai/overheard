@@ -11,7 +11,7 @@ Overheard reads Reddit (through Google, via SerpApi) and Hacker News for the phr
 People pay for this today:
 
 - **GummySearch** sold Reddit audience research (pain points, "is there a tool for…" requests): about $96k revenue in 2023 and roughly 400 paying customers at its peak (GetLatka estimate). It [closed to new users on 30 Nov 2025 and deletes all user data on 1 Dec 2026](https://gummysearch.com/docs/articles/gummysearch-is-now-closed-6533h), because it couldn't get a commercial licence for Reddit's Data API.
-- Paid successors are still selling: Syften $29.95–119.95/mo, PainOnSocial $19–49/mo (~$1.3k MRR on TrustMRR), Leadverse (~$4.0k MRR) and Replymer (~$4.1k MRR) on TrustMRR, ReplyGuy $49+/mo.
+- Paid successors are still selling: Syften $29.95–119.95/mo, PainOnSocial $19–49/mo (about $1.3k MRR on TrustMRR), Leadverse (about $4.0k MRR) and Replymer (about $4.1k MRR) on TrustMRR, ReplyGuy $49+/mo.
 - The open-source options we found (on 2026-10-17) are a CLI (openmagpie) and a small project (redsignal). We found no maintained, self-hostable app that does the whole morning loop.
 
 Overheard is that app: open source, on your laptop, with any open-weight model. Your list of products and competitors never leaves your machine, and labelling a few hundred posts costs nothing.
