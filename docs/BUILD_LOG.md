@@ -60,15 +60,15 @@ CLI, live: `overheard brief` (0 products with demo only; `--reddit off` with `se
 - **Weekly buckets:** `time_bucket('7 days', found_at, origin => now())` with TimescaleDB, else `date_bin('7 days', found_at, now())`, i.e. rolling weeks, instead of `date_trunc('week')`, so "this week" doesn't reset every Monday.
 - **Themes order:** growing, then new, then steady (each by growth, then size). This matches the mockup's order; plain growth ratio would put a brand-new theme first.
 - **Run log data:** `runs` has `searches_used`, `new_posts` (stored when a run finishes, live while it runs) and a `demo` flag, because a morning run spans products; demo clear removes demo runs too. `run_steps` are idempotent per step key, so a retried activity updates its row (↻).
-- **Never emailing twice (A4).** Migration `002_digest_ledger.sql` adds `digest_ledger` keyed by (run, product). `mail.deliver_once()` checks it before sending and writes it right after the mail server accepts (or the file is written); quiet mornings with no email leave no record. `tests/test_digest_ledger.py` runs the real `send_digest` activity twice (Temporal `ActivityEnvironment`) in SMTP and file mode and proves one email or file, with the retry logged as "… · not sent again".
+- **Never emailing twice (A4).** Migration `002_digest_ledger.sql` adds `digest_ledger` keyed by (run, product). `mail.deliver_once()` checks it before sending and writes it right after the mail server accepts (or the file is written); quiet mornings with no email leave no record. *Review 1 (#13):* it now claims the row as `sending` first and marks it `sent` after, so two overlapping attempts can't both send; file names carry the run. `tests/test_digest_ledger.py` runs the real `send_digest` activity twice (Temporal `ActivityEnvironment`) in SMTP and file mode and proves one email or file, with the retry logged as "… · not sent again".
 - **Reply drafts** are stored on the post (`reply_draft`), drafted on demand in review mode; demo drafts are written by hand.
-- **Settings › Reddit searches** counts phrases of active products including demo ones, so the demo screen isn't empty. Run now and Check now costs count only products that can really be searched (0 without a key).
+- **Settings › Reddit searches** counts phrases of active products including demo ones, so the demo screen isn't empty. Run now and Check now costs count only products that can really be searched (0 without a key). *Review 1 (#7, #19):* one shared `reddit_budget()` / `phrase_cost()` for every number; demo products count only when there are no real ones (labelled "demo"); without a key every place says "Hacker News only".
 - **Theme threshold 0.62** (cosine, embeddinggemma) is a guess from the model's typical similarities; tune on real posts in phase 2.
 - **Hybrid search** (full-text + pgvector, reciprocal rank fusion, spec §7) is in `db.hybrid_search` and tested; no screen uses it yet (no mockup has search).
 - **Security extras:** CSP without inline scripts (htmx `allowEval: false`), Host allowlist, same-origin check on every non-GET, HTTP Basic when `OVERHEARD_PASSWORD` is set, only http(s) post links rendered, CSV export guards against spreadsheet formulas.
-- **500-line rule:** db, pipeline, workflows, web and demo became packages (public imports unchanged). `web/context.py` (537) and `workflows/activities.py` (544) are a little over "about 500"; `demo/mealwise.py` (469) is data.
+- **500-line rule:** db, pipeline, workflows, web and demo became packages (public imports unchanged). `web/context.py` (537) and `workflows/activities.py` (544) are a little over "about 500"; `demo/mealwise.py` (469) is data. *Review 1 (#17):* both split; the largest module is now `workflows/runtime.py` (428).
 - **Docker images** pinned to releases ≥ 7 days old: python 3.13.12-slim, uv 0.12.24, pgvector 0.8.7-pg17, temporalio/temporal 1.9.1, ollama 0.40.2. Not built here.
-- **CI actions** are pinned to major tags (`checkout@v4`, `setup-python@v5`, `setup-uv@v6`), not SHAs; pin them before the first push.
+- **CI actions** are pinned to major tags (`checkout@v4`, `setup-python@v5`, `setup-uv@v6`), not SHAs; pin them before the first push. *Review 1 (#17):* pinned to commit SHAs (checkout v4.4.0, setup-python v5.6.0, setup-uv v6.8.0), and every compose, Dockerfile and CI service image by digest.
 
 ## Things I had to fix along the way
 
@@ -85,3 +85,68 @@ PyPI (packages, `uv_build`); GitHub releases for IBM Plex Sans, JetBrains Mono a
 - Live SerpApi, Hacker News, Tiger and SMTP; real runs; banner and cover; final screenshots; the eval with checked labels and Hacker News items by id.
 - SMTP sending is written (STARTTLS/SSL with verification) but untested against a real server.
 - *Compare on my last 50 posts* and *Re-embed* are wired and tested at the function level but not exercised live (they need a second chat / embedding model).
+
+## Review 1
+
+Brief: [design/review-1.md](design/review-1.md), 2026-10-17/18 (IST). One commit per item (#1 to #28), each with a test that failed before the fix, plus two follow-ups found in the re-walk. `uv run pytest`: 157 passed (98 after phase 1); ruff check and format clean; leak check clean before every commit.
+
+### Re-walk checklist (real browser)
+
+Same setup as step 14: Chromium through Playwright, 1440 px, `OVERHEARD_OFFLINE=1 uv run overheard start`, demo data. Every row changed the page and was still true after a reload. A console listener (errors, warnings and page errors) ran on every screen, popover and dialog: **0 entries**.
+
+| | Interaction | Result |
+|---|---|---|
+| ✓ | **Done** on a card | Card leaves, counts and title drop; toast "Marked done" with Undo stays 8 s and pauses while hovered (#24). Still gone after reload. |
+| ✓ | **Undo** | Card back with its counts. |
+| ✓ | **Skip** | "Skipped · back tomorrow" with Undo; still gone after reload. |
+| ✓ | **Show done** (#24) | Status line "Show done (N)" lists today's done posts under "Done today" with Undo; Undo brings each back. |
+| ✓ | **Pause** (▾ menu) / **Resume** (Settings) | Toasts "Shipnote paused" / "resumed" (no Undo); tab, Settings row and the Settings search-plan block all refresh in the same response (#15); true after reload. |
+| ✓ | Paused product leaves the plan | Active: its steps are in the run. Paused: "nothing to check". |
+| ✓ | **◷ time pick** | 08:30 from the ◷ popover on Settings (chip and Settings picker both follow), 07:30 from the brief and 07:00 from the themes page (no Settings picker there: no `oobErrorNoTarget`, #25). Temporal follows. |
+| ✓ | **Timezone** (#11) | Asia/Tokyo from the ◷ popover and Europe/London from Settings › Time: toast "Every morning at 07:00 Europe/London"; `temporal schedule describe` showed TimeZoneName Asia/Tokyo. Restored to Asia/Kolkata. |
+| ✓ | **±5** | 08:35 in the chip, Settings and Temporal (minute 35, hour 8). |
+| ✓ | **Pause all** | Chip "Paused"; Temporal Paused true, note "paused in Overheard"; survives reload. Restored: 07:00 Asia/Kolkata, 12 h catch-up, overlap skip, not paused. |
+| ✓ | **Add product** (#21) | Badge "2 phrases · Hacker News only"; toast "Listening. First check started" (no Undo); brief "Listening. The first check is running." polls every 3 s, then shows the real state, and the ▾ menu flips from "Checking…" (disabled) to "Check now" without a reload. |
+| ✓ | **Edit** | New description saved, "Saved" toast, same after reload. |
+| ✓ | **Delete** (#16) | Dialog: "Its posts, themes and runs go too; the Reddit searches it used still count toward your SerpApi plan. This can't be undone." Confirm removes the tab, lands on the first product; same after reload. |
+| ✓ | **Run now** (#3) | Toast "Morning brief started" (no Undo); while it runs the button says "Running…", disabled, "Already running", and a second Run now is refused. |
+| ✓ | **Check now** | From the ▾ menu: "Checking Docsprout now" (no Undo), menu "Checking…" while it runs. On `/runs` the new row appears (#15). |
+| ✓ | Review **D / S / C / O / ?** (#22) | Progress counts through the session: 1 of 7 → 2 of 7 → 3 of 7, filled segments; Undo → 2 of 7; reload keeps 2 of 7. C "Reply copied"; O clicks the thread link (intercepted); ? opens and closes the list. |
+| ✓ | Review buttons | Skip, Done next, Copy; **Shorter** rewrote the draft with local gemma (169 → 164 characters), kept after reload. |
+| ✓ | **Remove demo data** (#15) | Dialog → Setup, no tabs; the three demo digest files deleted, the non-demo test email kept; `uv run overheard demo load` brought everything back. |
+| – | Model card / **Use** in Compare | Not re-walked: it needs a second installed model, and the phase-1 `ollama cp` was a one-off OK (A3). #9 is covered by tests (switch refused without Temporal; Reembed switches the setting last; new posts join old themes meanwhile). |
+
+| | Item | Result |
+|---|---|---|
+| ✓ | 19 Reddit off | Settings: one line "Reddit off · Hacker News only" and "Add SERPAPI_API_KEY to .env to search Reddit too."; no equation. Add-product badge, a real product's ▾ menu and the ◷ Run now badge say "Hacker News only"; a demo product's menu says "demo". |
+| ✓ | 20 Themes counts | "↑ 5 this week · 14 in 4 weeks" next to "All 18 posts"; "4 in 4 weeks" next to "All 5 posts"; "new · 5 posts". Brief: "↑ 14 in 4 weeks". |
+| ✓ | 21 Never checked | See Add product. |
+| ✓ | 22 Review progress | See Review. |
+| ✓ | 23 Undo only where it reverses | No Undo on Run now, Check now, first check, pause, resume; Undo on Done and Skip. |
+| ✓ | 24 Done recoverable | See Show done. |
+| ✓ | 25 oob only where it fits | Time changed from the brief and themes pages: console empty. |
+| ✓ | 26 Tab caret | Visible ▾ with "Mealwise menu" label (`10-product-menu.png`). |
+| ✓ | 27 Setup badge | "✓ ready · Reddit off · email to file" (`01-setup.png`). |
+| ✓ | 28 Send a test | Toast "Test email saved to .data/digests/<date>-test-test.html". |
+
+Screenshots refreshed in `docs/img/review/` (all except `07d-settings-two-models.png`, which needs a second model); new: `02f-brief-show-done.png`.
+
+### Found in the re-walk, fixed with a test
+
+- **The bar stayed "Checking…" after a first check** (#21 follow-up). The brief poll swapped only the brief; its last response now also sends the bar.
+- **Timezone names overlapped in Settings › Time** (#11 follow-up). The 66 px cell for time presets also applied to the timezone list (the ◷ popover was fine); timezone options now size to their text.
+
+### Mistakes, and what I changed
+
+- **#14 was committed with a failing test.** My check script piped `pytest` into `tail`, so its exit status was lost (expected `overheard, public`, got `overheard,public`). The next commit fixed the test; the script now runs with `set -eo pipefail`.
+- **#10's commit had unsorted test imports.** I edited a test after the last ruff run; fixed in #11's commit. ruff now runs last.
+- One walk script of mine posted Undo with an undefined id (a 422 in the console). A bug in the script, not the app; reran clean.
+
+### Noticed, not changed (for the planner)
+
+- Digest file names use the UTC date (`mail.write_file`), while the search ledger's day is in the schedule's timezone. At 00:48 IST the demo files say 2026-10-17. Same day for a 07:00 Asia/Kolkata schedule; a schedule in, say, Australia/Sydney would name the morning's file with the previous day.
+- After **Check now** from a brief page (not a first check), the ▾ menu says "Checking…" until the next page load. Only `/runs` and the first-check brief poll refresh it on their own.
+
+### Network in review 1
+
+Local Postgres, Temporal and Ollama, plus read-only lookups for #17's pinning: the GitHub API (`gh api`) for action tags → commit SHAs and release dates, and Docker Hub (`auth.docker.io`, `registry-1.docker.io`) and `ghcr.io` (token and manifest requests) for image digests. Nothing pulled, built or downloaded; no SerpApi, Hacker News, Tiger or SMTP.
