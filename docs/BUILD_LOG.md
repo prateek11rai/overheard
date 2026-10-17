@@ -150,3 +150,23 @@ Screenshots refreshed in `docs/img/review/` (all except `07d-settings-two-models
 ### Network in review 1
 
 Local Postgres, Temporal and Ollama, plus read-only lookups for #17's pinning: the GitHub API (`gh api`) for action tags → commit SHAs and release dates, and Docker Hub (`auth.docker.io`, `registry-1.docker.io`) and `ghcr.io` (token and manifest requests) for image digests. Nothing pulled, built or downloaded; no SerpApi, Hacker News, Tiger or SMTP.
+
+## Questions from the agent
+
+Phase 2, asked 2026-10-18 around 02:10 IST. Steps 1–5 are done and committed, as are the parts of step 10 that don't need the live run (the HN items by id, `doctor`'s TimescaleDB line). Step 6's first checks ran live: 4 SerpApi searches, 14 Reddit posts, every quote verifies. No live searches or emails since.
+
+**Q1 (step 7): the Run now email would be empty.** The morning email shows only posts *found in that run* (a phase-1 decision, so posts don't repeat every morning). Step 7's Run now reuses the day's Reddit results from the ledger, so none of its Reddit posts are new to that run. Only Hacker News posts that appeared since the first check would count, and HN had nothing in the past day for these phrases. So both digests would be "quiet", and with quiet-morning emails off (the default), **nothing would be emailed**.
+1. **Recommended:** a hand-started **Run now** emails the full open brief (what the app shows). Scheduled mornings and Check now stay "new in this run". A small change with a test; both emails would have real content.
+2. No code change: switch `EMAIL_MODE` to `smtp` before redoing step 6's first checks (see Q2), so their digests are the emails (2) plus `email-test` (1) = 3. Step 7's Run now still shows the 0-search reuse but sends nothing.
+3. Turn on "Send a short email" for quiet mornings on both products, so Run now emails "Nothing new about X since yesterday" (not a real digest).
+
+**Q2 (step 6): no Hacker News posts arrived.** HN was queried with the exact phrase in quotes (my phase-1 choice; the spec doesn't ask for it). None of the four phrases occurs verbatim on HN in the past week, although "supabase" alone has 13 hits and "obsidian" 26. I've switched HN to all-words matching (`8b5cd55`). The same phrases then match 11 HN items in the past week (3/0/6/2), but 0 in the past day. A product's first check looks back a week (`baa96fb`, my decision: the spec says "the past day or week"); later runs look back a day. So:
+1. **Recommended:** delete Supabase and Obsidian and add them again through the UI, so their first checks rerun with all-words HN matching. That's +4 SerpApi searches, for a phase total of 4 + 4 + 0 (step 7) + 1 (step 8) = **9 of 12**.
+2. Keep them as they are: HN posts arrive only from later past-day runs, so the brief shows Reddit only for now.
+
+If you pick Q2 option 1, Q1 option 2 also works without code: switch to `smtp` first, and the re-added products' first-check digests become the 2 emails.
+
+**FYI, decided (safe direction, say if you disagree):**
+- **Step 8:** after the `.env` switch to `smtp`, step 8's Check now would send a 4th email. I'll run that step's worker with `EMAIL_MODE=file` set in its process environment (not an `.env` edit), so it writes a file instead.
+- **Step 8 phrase:** I'll add a third phrase to Obsidian so there is "one phrase not yet searched today" (1 search), then remove the phrase afterwards so both products end with two phrases.
+- **The 07:00 schedule:** a scheduled morning while I'm still working would spend up to 4 more searches and send up to 2 emails, over both caps. If the work runs past about 06:50 IST, I'll move the morning time away and set it back to 07:00 afterwards, so no scheduled run fires during this phase.
