@@ -150,7 +150,7 @@ def theme_trend(stat: ThemeStat | None, now: datetime) -> tuple[str, str]:
         now: Now.
 
     Returns:
-        (trend, short text) such as ("up", "↑ 14 posts"), ("new", "new") or ("", "").
+        (trend, short text) such as ("up", "↑ 14 in 4 weeks"), ("new", "new") or ("", "").
     """
     if stat is None:
         return "", ""
@@ -160,7 +160,7 @@ def theme_trend(stat: ThemeStat | None, now: datetime) -> tuple[str, str]:
     before = stat.weekly[1:5] if len(stat.weekly) > 1 else []
     avg = sum(before) / len(before) if before else 0
     if this_week >= 2 and this_week > avg:
-        return "up", f"↑ {stat.posts_4w} posts"
+        return "up", f"↑ {stat.posts_4w} in 4 weeks"
     return "", ""
 
 

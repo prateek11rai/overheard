@@ -519,3 +519,12 @@ def test_search_plan_counts_demo_only_without_real_products(tmp_path):
         assert "2 phrases" in plan and "· demo" not in plan and "Demo products" not in plan
         bar = c.get("/p/tidyshelf").text.split("</header>")[0]
         assert "2 searches" in bar
+
+
+def test_theme_counts_name_their_window(client):
+    themes = client.get("/p/demo-mealwise/themes").text
+    assert "↑ 5 this week · 14 in 4 weeks" in themes and "All 18 posts →" in themes
+    assert "4 in 4 weeks" in themes and "All 5 posts →" in themes
+    assert "↑ 14 posts" not in themes
+    brief = client.get("/p/demo-mealwise").text
+    assert "↑ 14 in 4 weeks" in brief

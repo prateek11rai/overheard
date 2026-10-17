@@ -69,11 +69,11 @@ class Views(WebCore):
                 continue
             trend = trends[s.id]
             if trend == "up":
-                text = f"↑ {s.posts_4w} posts · {s.weekly[0]} this week"
+                text = f"↑ {s.weekly[0]} this week · {s.posts_4w} in 4 weeks"
             elif trend == "new":
                 text = f"new · {s.total} post{'s' if s.total != 1 else ''}"
             else:
-                text = f"{s.posts_4w} post{'s' if s.posts_4w != 1 else ''}"
+                text = f"{s.posts_4w} in 4 weeks"
             posts = await self._db().theme_posts(s.id, 2)
             out.append({"stat": s, "trend": trend, "trend_text": text, "posts": posts})
         return {"themes": out, "posts_4w": await self._db().useful_count(product.id, 28)}
