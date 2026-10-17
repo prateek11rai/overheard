@@ -269,6 +269,21 @@ Obsidian got a temporary third phrase, `obsidian plugins`. `start` was stopped a
 
 SerpApi: the 9 searches above plus free `account.json` reads. Hacker News (Algolia, at most one request a second through the gate): about 15 for the runs, 10 diagnostics (exact vs all-words matching), 16 to pick eval items, 60 item fetches during the eval. Tiger through `DATABASE_URL`. SMTP: the 3 emails above, to the owner's own address. Local Ollama and Temporal. No PyPI changes (no new dependencies), no Reddit pages, no Google Fonts, no push or publishing.
 
+## Ship · diagrams, product video, post draft
+
+Brief: [design/ship.md](design/ship.md), 2026-10-18 from 03:10 IST, with the planner's answers A0 (relative paths inside the repo; absolute raw URLs only in the DEV post) and A1 (write "about $1.3k", not "~$1.3k", because GitHub reads paired single tildes as strikethrough).
+
+- **1 · Polish** (`16a2a01`): when a label's verified quote comes from the title, the brief, review mode and the email highlight the title; a comment's thread title never; a title-only story no longer repeats its title. Tested.
+- **2 · Social preview** (`20694fb`): `docs/img/social-preview.png`, 1280×640, the banner design with the same real post; a layout check confirmed every element sits inside the middle 1100×560.
+- **3 · Diagrams** (`94c4270`): five UML diagrams as static HTML + SVG in `docs/design/diagrams/` (one shared stylesheet with the app's palette, fonts and block edges), rendered at 2× into `docs/img/diagrams/`. A scratch script generated the pages, and only the pages are committed. The README shows the architecture and the morning run.
+- **4 · Product video** (`a03f084`): `docs/demo/overheard-demo-product.mp4` and `~/Downloads/overheard-demo-product.mp4`, 128 s, 1440×900, H.264 yuv420p 30 fps, 6.6 MB. It has seven scenes, each recorded in its own Playwright context with `recordVideo`, plus title cards rendered from HTML in the app's fonts (this ffmpeg has no drawtext). Still frames are halved with `mpdecimate=max=1`, so waits for the database shrink and motion keeps its speed. A cursor dot, click ring and key badge were injected into the recording context only. Every screen's text was scanned for anything shaped like an email address during recording (none), and frames were reviewed afterwards. Review mode showed only the first two Supabase posts: the third is a Hacker News comment whose body contains its author's address. Both Undos put the data back. The add-product form was never submitted. The email clip is merged when the owner sends it.
+- **5 · DEV post** (`837feab`): full draft, about 2,000 words, three title options in a comment, all five diagrams and three screenshots by raw URL. TODOs remain for the planner and owner.
+- **6 · Release notes** (`5578f78`): `docs/release-notes-v0.1.0.md`, docs by relative path; the planner attaches the banner.
+
+**Budget: 0 searches, 0 emails.** The app ran as separate processes, with the worker started as `EMAIL_MODE=file uv run overheard worker` (its environment checked with `ps`). Since 03:10 IST the ledger has 0 new Reddit rows (9 in total, as after phase 2) and SerpApi's counter still reads 10. The only run was the video's Check now on Obsidian: it reused today's two searches, found nothing new and sent no email ("Quiet morning · no email"). `digest_ledger` has no rows since 03:10.
+
+Noticed, not changed: `docs/design/spec.md` line 14 has the same `~$` strikethrough as the README had (the planner's file).
+
 ## Questions from the agent
 
 Phase 2, asked 2026-10-18 around 02:10 IST. **Answered** in [design/phase-2.md](design/phase-2.md) (A1 option 1, A2 option 1, email order); applied as described above. Steps 1–5 are done and committed, as are the parts of step 10 that don't need the live run (the HN items by id, `doctor`'s TimescaleDB line). Step 6's first checks ran live: 4 SerpApi searches, 14 Reddit posts, every quote verifies. No live searches or emails since.
