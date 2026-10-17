@@ -5,13 +5,6 @@ tags: devchallenge, hf26challenge, opensource, python
 cover_image: https://raw.githubusercontent.com/prateek11rai/overheard/main/docs/img/devto-cover.png
 ---
 
-<!--
-TODO(planner): pick a title (or write your own) and put it in the front matter. Three options:
-1. GummySearch deletes everyone's data on December 1. I rebuilt its morning loop on a 4B model on my laptop
-2. 26 posts, 4 Reddit searches, 0 cloud AI: a morning brief of what people say about your product
-3. I killed the worker mid-search and SerpApi charged me once: building a morning brief with Temporal and Gemma
--->
-
 *This is a submission for the [Hacktoberfest Open-Source AI Challenge Week 2: Side Hustle](https://dev.to/challenges/hacktoberfest-week2-2026-10-12)*
 
 ## What I Built
@@ -28,7 +21,7 @@ Every label carries a sentence quoted from the post, and code checks that the se
 
 **The problem it solves.** A maker with two or three side projects doesn't have time to read Reddit every day, and the posts that matter ("is there an app that…") are buried in threads about something else. Overheard reads for you, labels what it finds, and shows only what is worth your time, each with the sentence that earned it its place.
 
-<!-- TODO(planner): one or two sentences in the owner's voice on why they built it. Don't invent a story. -->
+**Why I built it.** I wanted to understand the products I'm building: whether anyone is talking about them or not, and in what light.
 
 ## Demo
 
@@ -136,10 +129,6 @@ It got 28 of the 30 written posts and 48 of the 60 Hacker News items. Five Hacke
 ## My Agent Session
 
 <!-- TODO(planner): {% agent_session <id> %} after the planner scrubs and submits the build session and the owner publishes it. -->
-
-## My First User
-
-<!-- TODO(planner): the whole section. Who ran it on their own product, what they said, whether they'd pay. Never invented. -->
 
 ## Prize Categories
 
