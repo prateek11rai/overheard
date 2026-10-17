@@ -305,39 +305,62 @@ class RunQueries(DatabaseCore):
         return {(r["product_id"], r["phrase"]): r["day"] for r in rows}
 
     async def digest_get(self, key: str) -> dict | None:
-        """A digest already sent or saved, by its idempotency key.
+        """A digest claimed or sent, by its idempotency key.
 
         Args:
             key: `run_key|product_id`.
 
         Returns:
-            The ledger row, or None.
+            The ledger row (with `status` sending or sent), or None.
         """
         return await self._one(
-            "SELECT idempotency_key, outcome, sent_at FROM digest_ledger "
+            "SELECT idempotency_key, outcome, status, sent_at FROM digest_ledger "
             "WHERE idempotency_key = %s",
             (key,),
         )
 
-    async def digest_save(self, key: str, run_key: str, product_id: int, outcome: str) -> bool:
-        """Record that a digest was sent or saved.
+    async def digest_claim(self, key: str, run_key: str, product_id: int) -> bool:
+        """Claim a digest before sending it, so a second attempt can't send it too.
 
         Args:
             key: `run_key|product_id`.
             run_key: The run (workflow id).
             product_id: Product id.
-            outcome: What happened, for the Run log.
 
         Returns:
-            Whether a new row was written.
+            Whether this attempt got the claim.
         """
         return (
             await self._exec(
-                "INSERT INTO digest_ledger (idempotency_key, run_key, product_id, outcome) "
-                "VALUES (%s, %s, %s, %s) ON CONFLICT (idempotency_key) DO NOTHING",
-                (key, run_key, product_id, outcome),
+                "INSERT INTO digest_ledger (idempotency_key, run_key, product_id, outcome, "
+                "status) VALUES (%s, %s, %s, 'sending', 'sending') "
+                "ON CONFLICT (idempotency_key) DO NOTHING",
+                (key, run_key, product_id),
             )
             > 0
+        )
+
+    async def digest_mark_sent(self, key: str, outcome: str) -> None:
+        """Mark a claimed digest as sent, with what happened.
+
+        Args:
+            key: `run_key|product_id`.
+            outcome: What happened, for the Run log.
+        """
+        await self._exec(
+            "UPDATE digest_ledger SET status = 'sent', outcome = %s, sent_at = now() "
+            "WHERE idempotency_key = %s",
+            (outcome, key),
+        )
+
+    async def digest_release(self, key: str) -> None:
+        """Drop a claim when nothing was sent (quiet morning, email off, or an error).
+
+        Args:
+            key: `run_key|product_id`.
+        """
+        await self._exec(
+            "DELETE FROM digest_ledger WHERE idempotency_key = %s AND status = 'sending'", (key,)
         )
 
     # evals

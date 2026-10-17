@@ -90,21 +90,35 @@ def render_quiet(settings: Settings, product: Product) -> tuple[str, str, str]:
     return ctx["subject"], html, text
 
 
-def write_file(settings: Settings, slug: str, subject: str, html: str) -> Path:
-    """Write a digest to `.data/digests/` (`EMAIL_MODE=file`).
+def run_tag(run: str) -> str:
+    """A short tag for a run in file names: lowercase letters and digits only.
+
+    Args:
+        run: The run (workflow id).
+
+    Returns:
+        The tag, without dashes so names can be split back into date, run and slug.
+    """
+    return re.sub(r"[^a-z0-9]", "", run.lower())[-28:] or "run"
+
+
+def write_file(settings: Settings, slug: str, subject: str, html: str, run: str = "run") -> Path:
+    """Write a digest to `.data/digests/<date>-<run>-<slug>.html` (`EMAIL_MODE=file`).
 
     Args:
         settings: App settings.
         slug: Product slug.
         subject: The subject (kept in the HTML title).
         html: The email HTML.
+        run: The run it belongs to.
 
     Returns:
         The file written.
     """
     folder = settings.digests_dir
     folder.mkdir(parents=True, exist_ok=True)
-    path = folder / f"{datetime.now(UTC):%Y-%m-%d}-{safe_filename(slug)}.html"
+    name = f"{datetime.now(UTC):%Y-%m-%d}-{run_tag(run)}-{safe_filename(slug)}.html"
+    path = folder / name
     path.write_text(html, encoding="utf-8")
     return path
 
@@ -164,7 +178,7 @@ async def deliver(
     else:
         subject, html, text = render_digest(settings, product, brief)
     if settings.email_mode == "file":
-        write_file(settings, product.slug, subject, html)
+        write_file(settings, product.slug, subject, html, run=run_key or "run")
         return "Digest saved to .data/digests"
     if settings.email_mode != "smtp":
         return "Email off · digest in the app"
@@ -216,12 +230,20 @@ async def deliver_once(
         What happened, for the Run log.
     """
     key = digest_key(run_key, product.id)
-    done = await db.digest_get(key)
-    if done is not None:
-        return f"{done['outcome']} · not sent again"
-    outcome = await deliver(settings, product, brief, run_key, recipients)
+    if not await db.digest_claim(key, run_key, product.id):
+        done = await db.digest_get(key)
+        if done is not None and done["status"] == "sent":
+            return f"{done['outcome']} · not sent again"
+        return "Already being sent · not sent again"
+    try:
+        outcome = await deliver(settings, product, brief, run_key, recipients)
+    except BaseException:
+        await db.digest_release(key)
+        raise
     if outcome in SENT_OUTCOMES:
-        await db.digest_save(key, run_key, product.id, outcome)
+        await db.digest_mark_sent(key, outcome)
+    else:
+        await db.digest_release(key)
     return outcome
 
 
@@ -238,7 +260,7 @@ async def send_test(settings: Settings, recipient: str | None) -> str:
     html = _env.get_template("test.html").render({"link": settings.app_url})
     subject = "Overheard: test email"
     if settings.email_mode == "file":
-        write_file(settings, "test", subject, html)
+        write_file(settings, "test", subject, html, run="test")
         return "Test email saved to .data/digests"
     if settings.email_mode != "smtp" or not settings.smtp_host:
         return "Email isn't set up. Add SMTP_* to .env"
