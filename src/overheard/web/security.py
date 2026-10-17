@@ -60,6 +60,24 @@ def parse_emails(raw: str) -> list[str]:
     return out[:10]
 
 
+CSV_RISKY = ("=", "+", "-", "@", "\t", "\r")
+
+
+def csv_safe(value: Any) -> Any:
+    """Keep a CSV cell from being read as a formula by spreadsheet apps.
+
+    Args:
+        value: A cell value.
+
+    Returns:
+        The value, with a leading `'` when it is text starting with = + - @ tab or CR.
+        Empty and non-text cells are left alone.
+    """
+    if isinstance(value, str) and value and value.startswith(CSV_RISKY):
+        return "'" + value
+    return value
+
+
 class SecurityMiddleware(BaseHTTPMiddleware):
     """Password (when set), same-origin POSTs and security headers."""
 

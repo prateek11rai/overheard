@@ -438,3 +438,14 @@ def test_the_timezone_can_be_changed_and_updates_the_schedule(client, monkeypatc
     assert "Asia/Tokyo" in page.split('id="timepick"')[1][:400]
     r = client.post("/api/schedule/timezone", data={"tz": "Mars/Olympus"}, headers=ask("/settings"))
     assert "isn't a timezone" in trig(r)
+
+
+def test_csv_cells_that_look_like_formulas_are_escaped():
+    from overheard.web.security import csv_safe
+
+    for risky in ("=SUM(A1)", "+1", "-2", "@cmd", "\tx", "\rx"):
+        assert csv_safe(risky) == "'" + risky
+    assert csv_safe("") == ""
+    assert csv_safe(None) is None
+    assert csv_safe("plain text") == "plain text"
+    assert csv_safe(3) == 3
