@@ -172,6 +172,18 @@ class DatabaseCore:
             "tables": row["tables"] if row else 0,
         }
 
+    async def timescale(self) -> str | None:
+        """TimescaleDB's version once a real `time_bucket` call has answered.
+
+        Returns:
+            The version, or None when TimescaleDB isn't installed.
+        """
+        row = await self._one("SELECT extversion FROM pg_extension WHERE extname = 'timescaledb'")
+        if row is None:
+            return None
+        await self._one("SELECT time_bucket('7 days', now(), origin => now()) AS week")
+        return row["extversion"]
+
     async def has_timescale(self) -> bool:
         """Whether TimescaleDB is installed (for `time_bucket`)."""
         if self._timescale is None:

@@ -125,6 +125,18 @@ async def _setup(settings: Settings) -> int:
     return 0
 
 
+def timescale_line(version: str | None) -> None:
+    """Print which path the weekly theme counts take.
+
+    Args:
+        version: TimescaleDB's version, or None when it isn't installed.
+    """
+    if version:
+        _line(OK, "TimescaleDB", f"{version} · time_bucket works")
+    else:
+        _line(LATER, "TimescaleDB", "not installed · weekly counts use date_bin")
+
+
 async def _doctor(settings: Settings) -> int:
     from overheard.ai import AI, role_models
     from overheard.db import Database
@@ -135,6 +147,7 @@ async def _doctor(settings: Settings) -> int:
     try:
         async with Database(settings.dsn, settings.overheard_db_schema, max_size=2) as db:
             health = await db.health()
+            timescale = await db.timescale()
             models = role_models(
                 await db.get_setting("models"), settings.chat_model, settings.embed_model
             )
@@ -143,6 +156,7 @@ async def _doctor(settings: Settings) -> int:
             failures += 1
         else:
             _line(OK, "Postgres", f"pgvector {health['pgvector']} · schema ready")
+            timescale_line(timescale)
     except Exception as exc:
         _line(BAD, "Postgres", f"{type(exc).__name__}: check DATABASE_URL")
         failures += 1

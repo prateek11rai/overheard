@@ -34,3 +34,18 @@ async def test_themes_in_the_database(db):
     themes = await db.themes_for(product.id, "embeddinggemma:300m")
     assert themes[0]["id"] == tid and themes[0]["centroid"] == [1.0, 0.0, 0.0]
     assert await db.themes_for(product.id, "other-model") == []
+
+
+async def test_timescale_is_reported_only_when_time_bucket_answers(db):
+    assert await db.has_timescale() is False
+    assert await db.timescale() is None
+
+
+def test_doctor_names_the_weekly_count_path(capsys):
+    from overheard.cli import timescale_line
+
+    timescale_line(None)
+    timescale_line("2.30.2")
+    out = capsys.readouterr().out
+    assert "not installed · weekly counts use date_bin" in out
+    assert "2.30.2 · time_bucket works" in out
