@@ -35,24 +35,31 @@ class Views(WebCore):
             "quiet_themes": themes,
         }
 
-    async def _review_ctx(self, request: Request, product: Product, post_id: int | None) -> dict:
+    async def _review_ctx(
+        self,
+        request: Request,
+        product: Product,
+        post_id: int | None,
+        session: list[int] | None = None,
+    ) -> dict:
         brief = await pipeline.brief_for(self._db(), product, await self._tz())
-        cards = brief.cards
-        idx = 0
-        if post_id is not None:
-            for i, c in enumerate(cards):
-                if c.post.id == post_id:
-                    idx = i
-                    break
-        card = cards[idx] if cards else None
+        cards = {c.post.id: c for c in brief.cards}
+        session = [i for i in (session or []) if isinstance(i, int)] or list(brief.order)
+        remaining = [i for i in session if i in cards]
+        current = post_id if post_id in remaining else (remaining[0] if remaining else None)
+        handled = len(session) - len(remaining)
+        bar = ["cur" if i == current else "" if i in cards else "done" for i in session]
         ctx = await self._chrome(request, product.slug)
         return {
             **ctx,
             "product": product,
             "brief": brief,
-            "card": card,
-            "idx": idx,
-            "order": brief.order,
+            "card": cards.get(current) if current is not None else None,
+            "idx": remaining.index(current) if current in remaining else 0,
+            "position": min(handled + 1, len(session)),
+            "session_total": len(session),
+            "bar": bar,
+            "session": session,
         }
 
     async def _themes_ctx(self, product: Product) -> dict[str, Any]:

@@ -131,14 +131,23 @@ def test_skip_snoozes_until_the_next_morning(client):
     assert "Go through all 6" in client.get("/p/demo-mealwise").text
 
 
-def test_review_done_moves_to_the_next_post(client):
-    page = client.get("/p/demo-mealwise/review").text
-    first = re.search(r"/api/posts/(\d+)/done", page).group(1)
-    r = client.post(
-        f"/api/posts/{first}/done", data={"pos": "0"}, headers=ask("/p/demo-mealwise/review")
+def test_review_counts_progress_through_the_session(client):
+    first = client.get("/p/demo-mealwise/review", follow_redirects=False)
+    assert first.status_code == 303 and "session=" in first.headers["location"]
+    url = first.headers["location"]
+    page = client.get(url).text
+    assert "1 of 7" in page and page.count('<i class="cur">') == 1
+    pid = re.search(r"/api/posts/(\d+)/done", page).group(1)
+    r = client.post(f"/api/posts/{pid}/done", headers=ask(url))
+    assert "2 of 7" in r.text
+    assert (
+        r.text.count('<i class="done">') == 1 and "Ask HN: How do you plan weekly meals?" in r.text
     )
-    assert "1 of 6" in r.text and f"/api/posts/{first}/done" not in r.text
-    assert "Ask HN: How do you plan weekly meals?" in r.text
+    second = re.search(r"/api/posts/(\d+)/skip", r.text).group(1)
+    r = client.post(f"/api/posts/{second}/skip", headers=ask(url))
+    assert "3 of 7" in r.text and r.text.count('<i class="done">') == 2
+    r = client.post(f"/api/posts/{second}/undo", headers=ask(url))
+    assert "2 of 7" in r.text and "Ask HN: How do you plan weekly meals?" in r.text
 
 
 def test_pause_and_resume_a_product(client):

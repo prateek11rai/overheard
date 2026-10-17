@@ -1,12 +1,27 @@
 import json
 from datetime import datetime, timedelta
+from urllib.parse import parse_qs, urlsplit
 from zoneinfo import ZoneInfo
 
 from fastapi import Request
 from fastapi.responses import HTMLResponse, Response
 
-from overheard import pipeline, workflows
+from overheard import workflows
 from overheard.web.views import Views
+
+
+def session_from(request: Request) -> list[int]:
+    """The review session's post ids, from the review page's URL.
+
+    Args:
+        request: An HTMX request from the review page.
+
+    Returns:
+        Post ids in session order (empty when there is none).
+    """
+    url = request.headers.get("hx-current-url") or str(request.url)
+    raw = parse_qs(urlsplit(url).query).get("session", [""])[0]
+    return [int(x) for x in raw.split(",") if x.isdigit()]
 
 
 class Web(Views):
@@ -20,12 +35,7 @@ class Web(Views):
         if product is None:
             return self._fragment(request, None, {}, toast="That post is gone")
         if self._current_path(request).endswith("/review"):
-            next_id = show
-            if next_id is None:
-                brief = await pipeline.brief_for(self._db(), product, await self._tz())
-                if brief.order:
-                    next_id = brief.order[min(pos or 0, len(brief.order) - 1)]
-            ctx = await self._review_ctx(request, product, next_id)
+            ctx = await self._review_ctx(request, product, show, session_from(request))
             return self._fragment(request, "_review_main.html", ctx, oob=["_bar.html"])
         ctx = await self._brief_ctx(request, product)
         return self._fragment(request, "_brief_main.html", ctx, oob=["_bar.html"])

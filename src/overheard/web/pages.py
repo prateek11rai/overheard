@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 
+from overheard import pipeline
 from overheard.web.context import DONE_MESSAGES
 from overheard.web.updates import Web
 
@@ -38,11 +39,22 @@ def register(app: FastAPI, web: Web) -> None:
         return web._page(request, "brief.html", await web._brief_ctx(request, product))
 
     @app.get("/p/{slug}/review", response_class=HTMLResponse)
-    async def review_page(request: Request, slug: str, post: int | None = None) -> Response:
+    async def review_page(
+        request: Request, slug: str, post: int | None = None, session: str = ""
+    ) -> Response:
         product = await web._db().product_by_slug(slug)
         if product is None:
             return RedirectResponse("/", status_code=303)
-        return web._page(request, "review.html", await web._review_ctx(request, product, post))
+        ids = [int(x) for x in session.split(",") if x.isdigit()]
+        if not ids:
+            # Pin the session's posts in the URL, so progress counts through the session.
+            brief = await pipeline.brief_for(web._db(), product, await web._tz())
+            if brief.order:
+                at = f"&post={post}" if post else ""
+                order = ",".join(str(i) for i in brief.order)
+                return RedirectResponse(f"/p/{slug}/review?session={order}{at}", status_code=303)
+        ctx = await web._review_ctx(request, product, post, ids)
+        return web._page(request, "review.html", ctx)
 
     @app.get("/p/{slug}/themes", response_class=HTMLResponse)
     async def themes_page(request: Request, slug: str) -> Response:

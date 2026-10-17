@@ -1,7 +1,7 @@
 {% from "_macros.html" import block_css %}<div id="review-main"{% if oob %} hx-swap-oob="true"{% endif %}>
   <div class="row between">
     <a class="link" href="/p/{{ product.slug }}">← Back to the brief</a>
-    {% if card %}<div class="row"><span class="progress">{% for pid in order %}<i{% if loop.index0 == idx %} class="cur"{% endif %}></i>{% endfor %}</span><span class="mono small dim">{{ idx + 1 }} of {{ order|length }}</span></div>{% endif %}
+    {% if card %}<div class="row"><span class="progress">{% for state in bar %}<i{% if state %} class="{{ state }}"{% endif %}></i>{% endfor %}</span><span class="mono small dim">{{ position }} of {{ session_total }}</span></div>{% endif %}
   </div>
   {% if card %}
   {% set p = card.post %}
