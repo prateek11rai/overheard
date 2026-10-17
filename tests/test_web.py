@@ -602,3 +602,16 @@ def test_done_posts_can_be_found_and_undone_later(client):
     assert f'hx-post="/api/posts/{post}/undo"' in shown
     r = client.post(f"/api/posts/{post}/undo", headers=ask("/p/demo-mealwise?show=done"))
     assert f'data-post="{post}"' in r.text and "Show done (1)" not in r.text
+
+
+def test_out_of_band_fragments_only_go_where_their_target_is(client):
+    from overheard.web.context import oob_target_on
+
+    r = client.post("/api/schedule/time", data={"time": "08:00"}, headers=ask("/p/demo-mealwise"))
+    assert 'id="bar" hx-swap-oob="true"' in r.text and 'id="timepick"' not in r.text
+    r = client.post("/api/schedule/time", data={"time": "07:00"}, headers=ask("/settings"))
+    assert 'id="timepick" hx-swap-oob="true"' in r.text
+    assert not oob_target_on("_runs_main.html", "/p/demo-mealwise")
+    assert not oob_target_on("_bar.html", "/setup")
+    assert oob_target_on("_brief_main.html", "/p/demo-mealwise")
+    assert not oob_target_on("_brief_main.html", "/p/demo-mealwise/review")
