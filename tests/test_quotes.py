@@ -55,7 +55,7 @@ def test_locate_returns_the_original_span():
 
 def test_locate_spans_ellipsis():
     text = "Half my groceries are compost by Friday. It's embarrassing, honestly."
-    span = locate_quote("Half my groceries … honestly", text)
+    span = locate_quote("Half my groceries … It's embarrassing, honestly", text)
     assert span is not None
     assert (
         text[span[0] : span[1]]
@@ -65,3 +65,34 @@ def test_locate_spans_ellipsis():
 
 def test_normalize_dashes_and_nbsp():
     assert normalize("leftovers first — always") == "leftovers first - always"
+
+
+def test_stitched_single_words_fail():
+    assert not verify_quote("I...need...app", "I really do not need a new app")
+    assert not verify_quote("I … need … a new app", "I really do not need a new app")
+
+
+def test_every_fragment_needs_three_words():
+    text = "I keep buying the same things and throwing half of it away."
+    assert verify_quote("I keep buying ... throwing half of", text)
+    assert not verify_quote("I keep buying ... away", text)
+
+
+def test_fragments_must_be_close_and_few():
+    filler = " ".join(["word"] * 80)
+    text = f"The first part is here. {filler} The second part is here."
+    assert not verify_quote("The first part ... The second part", text)
+    near = "one two three alpha four five six beta seven eight nine gamma ten eleven twelve"
+    assert verify_quote("one two three ... four five six ... seven eight nine", near)
+    assert not verify_quote(
+        "one two three ... four five six ... seven eight nine ... ten eleven twelve", near
+    )
+
+
+def test_matches_start_and_end_on_word_boundaries():
+    text = "We need an application that plans meals for us."
+    assert locate_quote("ication that plans meals", text) is None
+    assert locate_quote("an application that pla", text) is None
+    span = locate_quote("an application that plans", text)
+    assert span is not None and text[span[0] : span[1]] == "an application that plans"
+    assert text[span[0] - 1] == " "
