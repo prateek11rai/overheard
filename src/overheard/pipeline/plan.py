@@ -38,6 +38,7 @@ class ProductPlan:
     run_key: str = ""
     run_id: int = 0
     reddit_note: str = ""
+    window: str = "d"  # "w" looks back a week: a product's first check
 
 
 @dataclass

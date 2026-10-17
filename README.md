@@ -35,7 +35,7 @@ you ── http://127.0.0.1:8000 ──┐
 At the morning time (07:00 by default), one Temporal workflow runs each active product:
 
 1. **Plan searches.** One Reddit search (one SerpApi credit) per phrase per morning; Hacker News is free. If your plan can't cover every phrase every day, phrases take turns.
-2. **Search** Reddit through Google (title and snippet) and Hacker News (full text).
+2. **Search** Reddit through Google (title and snippet) and Hacker News (full text): the past day, or the past week on a new product's first check.
 3. **Save** new posts only.
 4. **Label** each post as *asking for a tool*, *pain point*, *mentions you*, *competitor* or *off-topic*. The model must return the exact sentence that justifies the label. Code checks that the quote is really in the post: at least three words, matched on word boundaries (ignoring case, spacing and quote styles), with `…` allowed for at most two left-out passages that sit close together, so a few words picked from all over a post never pass. A Hacker News comment must be quoted from the comment itself, not its thread's title. If the check fails, the model gets one more try, and after that the post is hidden as *unverified*. Post text goes to the model as data, the model gets no tools, and a *mentions you* label only stands if the quote names your product.
 5. **Theme** pain points with embeddings in pgvector: a post joins the nearest theme or starts a new one, which the model names.

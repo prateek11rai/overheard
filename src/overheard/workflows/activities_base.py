@@ -105,7 +105,7 @@ class ActivitiesBase:
                 account = await self._account(client) if reddit else None
             except sources.SourceError:
                 account = None
-        return pipeline.make_plan(
+        plan = pipeline.make_plan(
             [_plan_input(p, reddit) for p in products],
             account,
             today,
@@ -116,6 +116,10 @@ class ActivitiesBase:
             monthly_cap=s.serpapi_monthly_cap,
             scheduled=scheduled,
         )
+        for p in plan.products:
+            if await self.db.last_product_run(p.id) is None:
+                p.window = "w"
+        return plan
 
     async def _record_plan(self, run_id: int, plan: pipeline.SearchPlan) -> None:
         for p in plan.products:

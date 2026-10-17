@@ -110,7 +110,9 @@ class ProductScan:
             try:
                 await workflow.execute_activity(
                     "search_reddit",
-                    SearchArgs(args.run_id, args.run_key, plan.id, phrase, plan.subreddits),
+                    SearchArgs(
+                        args.run_id, args.run_key, plan.id, phrase, plan.subreddits, plan.window
+                    ),
                     start_to_close_timeout=timedelta(seconds=40),
                     retry_policy=SEARCH_RETRY,
                 )

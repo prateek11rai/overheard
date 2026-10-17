@@ -69,6 +69,7 @@ class SearchArgs:
     product_id: int
     phrase: str
     subreddits: list[str] = field(default_factory=list)
+    window: str = "d"
 
 
 @dataclass

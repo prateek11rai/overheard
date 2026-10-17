@@ -91,7 +91,7 @@ class SearchActivities(ActivitiesBase):
 
             async def fetch() -> list[sources.Post]:
                 return await sources.search_reddit(
-                    client, key.get_secret_value(), args.phrase, args.subreddits
+                    client, key.get_secret_value(), args.phrase, args.subreddits, args.window
                 )
 
             try:
@@ -107,8 +107,11 @@ class SearchActivities(ActivitiesBase):
             except sources.PlanExhaustedError as exc:
                 raise ApplicationError(str(exc), type=PLAN_EXHAUSTED, non_retryable=True) from exc
         retried = info.attempt > 1
+        week = " · past week" if args.window == "w" else ""
         text = (
-            f"Reddit · {args.phrase}" + (" · retried" if retried else "") + f" · {len(posts)} posts"
+            f"Reddit · {args.phrase}{week}"
+            + (" · retried" if retried else "")
+            + f" · {len(posts)} posts"
         )
         await self.db.add_step(
             args.run_id,
@@ -143,7 +146,7 @@ class SearchActivities(ActivitiesBase):
             )
             return 0
         last = await self.db.last_product_run(plan.id)
-        since = datetime.now(UTC) - timedelta(days=1)
+        since = datetime.now(UTC) - timedelta(days=7 if plan.window == "w" else 1)
         if last and last["started_at"] < since:
             since = max(last["started_at"], datetime.now(UTC) - timedelta(days=7))
         total = 0
@@ -168,8 +171,10 @@ class SearchActivities(ActivitiesBase):
                 total += len(posts)
         n = len(plan.hn_phrases)
         retried = info.attempt > 1
-        text = f"Hacker News · {n} phrase{'s' if n != 1 else ''}" + (
-            " · retried" if retried else ""
+        text = (
+            f"Hacker News · {n} phrase{'s' if n != 1 else ''}"
+            + (" · past week" if plan.window == "w" else "")
+            + (" · retried" if retried else "")
         )
         await self.db.add_step(
             args.run_id,
