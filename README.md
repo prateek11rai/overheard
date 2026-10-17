@@ -37,7 +37,7 @@ At the morning time (07:00 by default), one Temporal workflow runs each active p
 1. **Plan searches.** One Reddit search (one SerpApi credit) per phrase per morning; Hacker News is free. If your plan can't cover every phrase every day, phrases take turns.
 2. **Search** Reddit through Google (title and snippet) and Hacker News (full text).
 3. **Save** new posts only.
-4. **Label** each post as *asking for a tool*, *pain point*, *mentions you*, *competitor* or *off-topic*. The model must return the exact sentence that justifies the label. Code checks that the quote is in the post (ignoring case, spacing and quote styles). If it isn't, the model gets one more try, and after that the post is hidden as *unverified*. Post text goes to the model as data, the model gets no tools, and a *mentions you* label only stands if the quote names your product.
+4. **Label** each post as *asking for a tool*, *pain point*, *mentions you*, *competitor* or *off-topic*. The model must return the exact sentence that justifies the label. Code checks that the quote is really in the post: at least three words, matched on word boundaries (ignoring case, spacing and quote styles), with `…` allowed for at most two left-out passages that sit close together, so a few words picked from all over a post never pass. A Hacker News comment must be quoted from the comment itself, not its thread's title. If the check fails, the model gets one more try, and after that the post is hidden as *unverified*. Post text goes to the model as data, the model gets no tools, and a *mentions you* label only stands if the quote names your product.
 5. **Theme** pain points with embeddings in pgvector: a post joins the nearest theme or starts a new one, which the model names.
 6. **Email** one digest per product from your own mailbox.
 
@@ -123,7 +123,7 @@ The web app listens on 127.0.0.1 by default and refuses any other address unless
 
 <!-- TODO(planner): link to the DEV post. -->
 
-Built for the [Hacktoberfest Open-Source AI Challenge, Week 2: Side Hustle](https://dev.to/challenges/hacktoberfest-week2-2026-10-12). Categories entered: Gemma, Temporal, SerpApi, Tiger Data.
+Built for the [Hacktoberfest Open-Source AI Challenge, Week 2: Side Hustle](https://dev.to/challenges/hacktoberfest-week2-2026-10-12). Categories entered: Gemma, Temporal, SerpApi, Tiger Data. Overheard runs on any Postgres with pgvector and uses TimescaleDB's `time_bucket` when present (tested on Tiger in phase 2).
 
 ## After the deadline
 
@@ -135,6 +135,6 @@ Commits after 2026-10-19 06:59 UTC are listed here.
 
 - Colours: [Catppuccin](https://github.com/catppuccin/catppuccin) Mocha (MIT).
 - Fonts: [IBM Plex Sans](https://github.com/IBM/plex) and [JetBrains Mono](https://github.com/JetBrains/JetBrainsMono) (SIL Open Font License), served from the app.
-- [htmx](https://github.com/bigskysoftware/htmx) (0BSD), [Temporal](https://temporal.io), [Tiger Data](https://www.tigerdata.com) (Postgres + pgvector), [SerpApi](https://serpapi.com), [Gemma](https://ai.google.dev/gemma) through [Ollama](https://ollama.com).
+- [htmx](https://github.com/bigskysoftware/htmx) (0BSD), [Temporal](https://temporal.io), [Tiger Data](https://www.tigerdata.com) (any Postgres with pgvector works; TimescaleDB `time_bucket` when present, tested in phase 2), [SerpApi](https://serpapi.com), [Gemma](https://ai.google.dev/gemma) through [Ollama](https://ollama.com).
 
 MIT licence: see [LICENSE](LICENSE) and [NOTICE](NOTICE).

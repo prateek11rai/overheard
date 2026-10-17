@@ -62,7 +62,8 @@ Environment variables win over `.env`; `.env` is read only when present. Only `D
 | `TEMPORAL_API_KEY` | empty | Temporal Cloud (turns on TLS) |
 | `TEMPORAL_UI_URL` | `http://127.0.0.1:8233` | the Run log's "Temporal UI" link |
 | `OVERHEARD_HOST` · `OVERHEARD_PORT` | `127.0.0.1` · `8000` | deploying (any other host needs `OVERHEARD_PASSWORD`) |
-| `OVERHEARD_PASSWORD` | empty | any non-local host: every page asks for it (HTTP Basic, any user name) |
+| `OVERHEARD_PASSWORD` | empty | any non-local host: every page asks for it (HTTP Basic, any user name). At least 12 characters; an empty or blank value counts as unset, so a non-local host refuses to start. |
+| `OVERHEARD_TIMEZONE` | the computer's | the first morning timezone (validated); after that it is picked in the app (◷ or Settings › Time) |
 | `OVERHEARD_DB_SCHEMA` | `overheard` | sharing a database. Overheard sets `search_path` per connection (in the connection options and with `SET`), so connect directly or through a session-mode pooler; transaction-mode poolers (PgBouncer `pool_mode=transaction`, Supavisor transaction mode) aren't supported. |
 | `OVERHEARD_DATA_DIR` | `.data` | moving local files (digests, Temporal state) |
 | `OVERHEARD_TEMPORAL_BIN` | Homebrew's (`$(brew --prefix)/bin/temporal`) | the Temporal CLI lives elsewhere (`start` and the tests use it; nothing is ever downloaded) |
@@ -76,11 +77,11 @@ The morning time and timezone, pause-all, products, recipients and model choices
 
 ## The morning job
 
-- Schedule `morning-brief`: daily at the chosen time in the chosen timezone, skips a run if the previous one is still going, catches up to 12 hours late. `temporal schedule describe --schedule-id morning-brief` shows it. The ◷ button and Settings › Time update it; Pause all pauses it.
-- **Run now** starts `MorningBrief` (same as the schedule). **Check now** starts `ProductScan` for one product. Changing the embedding model starts `Reembed`; *Compare on my last 50 posts* starts `CompareRecent`. All show in the Run log.
+- Schedule `morning-brief`: daily at the chosen time in the chosen timezone, skips a run if the previous one is still going, catches up to 12 hours late. `overheard setup`, every worker start and `overheard start` create it if it's missing and update it only if it differs (a compose deploy gets it from the worker). `temporal schedule describe --schedule-id morning-brief` shows it. The ◷ button and Settings › Time update it; Pause all pauses it.
+- **Run now** starts `MorningBrief` (same as the schedule). **Check now** starts `ProductScan` for one product. Both are refused ("Already running") while a morning run, or a check of that product, is still going; the buttons show disabled until it finishes. Runs that Temporal no longer runs are shown as failed. Changing the embedding model starts `Reembed`; *Compare on my last 50 posts* starts `CompareRecent`. All show in the Run log.
 - Search budget: one Reddit search per phrase per morning if phrases × days left in the month fits the searches left minus a 10% reserve (from SerpApi's free `account.json`); otherwise phrases take turns, least recently searched first. A used-up plan is a non-retryable failure that switches that morning to Hacker News only.
-- Never paying twice: every search goes through `search_ledger` keyed by run, product, source and phrase; a retry or a restarted worker reuses the saved result.
-- Never emailing twice: `send_digest` checks `digest_ledger` (keyed by run and product) before sending and records the digest right after the mail server accepts it (or the file is written), so a retry doesn't send the same morning email again.
+- Never paying twice: a Reddit search is paid once per day (in the schedule's timezone), product and phrase; any run that day (scheduled, Run now, Check now, a retry, a restarted worker or an overlapping run) reuses the saved result. Hacker News is searched live on every run. The 10 % reserve is kept back only for the scheduled run.
+- Never emailing twice: `send_digest` claims the (run, product) row in `digest_ledger` before sending and marks it sent after the mail server accepts it (or the file `<date>-<run>-<slug>.html` is written); a retry or an overlapping attempt doesn't send the same morning email again.
 
 ## Deploy (Docker Compose)
 
@@ -97,7 +98,7 @@ Not run during the hackathon; `.github/workflows/docker.yml` builds the image on
    ```
 2. `docker compose up -d` starts Postgres + pgvector, the Temporal dev server, Ollama, a one-shot `setup` (migrations), the worker and the web app.
 3. `docker compose exec ollama ollama pull gemma4:e4b` and `... ollama pull embeddinggemma:300m`.
-4. Open http://127.0.0.1:8000 on the host (the port is published on 127.0.0.1 only). For a real server, swap `temporal` for Temporal Cloud and `db` for managed Postgres (Tiger), keep the port on localhost and put a private tunnel or an authenticating proxy in front.
+4. Open http://127.0.0.1:8000 on the host (the port is published on 127.0.0.1 only). For a real server, swap `temporal` for Temporal Cloud and `db` for any managed Postgres with pgvector (Tiger is tested in phase 2), keep the port on localhost and put a private tunnel or an authenticating proxy in front.
 
 The image runs as a non-root user and sets `OVERHEARD_HOST=0.0.0.0`, so the web app will not start without `OVERHEARD_PASSWORD`. `GET /healthz` answers without the password, for health checks.
 
@@ -114,6 +115,7 @@ The image runs as a non-root user and sets `OVERHEARD_HOST=0.0.0.0`, so the web 
 | Run log: "Hacker News only · search plan used up" | SerpApi has no searches left this month; Reddit comes back next month or with a bigger plan. |
 | Run log: "Reddit off · no SerpApi key" | Add `SERPAPI_API_KEY` to `.env` and restart. |
 | No email | `EMAIL_MODE` is `off` or `file` (look in `.data/digests/`), or SMTP is wrong: `uv run overheard email-test`. Quiet mornings email only if the product asks. |
-| The app refuses to start on `0.0.0.0` | Set `OVERHEARD_PASSWORD`, or use `127.0.0.1`. |
+| The app refuses to start on `0.0.0.0` | Set `OVERHEARD_PASSWORD` (12 characters or more), or use `127.0.0.1`. |
+| "Already running" | A morning run or a check is still going; wait for its row in the Run log to finish. |
 | "Cross-origin request refused" | A button was pressed from another origin (a different host name or port). Open the app at the address it prints. |
 | Start over | Settings › Your data › Delete everything (products, posts, themes, runs). To drop all tables: `DROP SCHEMA overheard CASCADE`, then `uv run overheard setup`. |
