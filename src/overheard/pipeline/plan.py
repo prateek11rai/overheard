@@ -198,8 +198,9 @@ def make_plan(
     One Reddit search per phrase per morning if phrases × days left fits the searches left
     (scheduled runs keep a reserve for Run now and first checks); otherwise phrases take
     turns, least recently searched first. Phrases already searched today are free (the ledger
-    reuses them), so they are always planned and don't count against the day's searches. Hacker News is free and always searches every
-    phrase. The numbers come from `reddit_budget`, the same function Settings uses.
+    reuses them), so they are always planned and don't count against the day's searches.
+    Hacker News is free and always searches every phrase. The numbers come from
+    `reddit_budget`, the same function Settings uses.
 
     Args:
         products: Active products.
