@@ -1,6 +1,7 @@
 import time
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from temporalio import activity, workflow
 from temporalio.exceptions import ApplicationError
@@ -64,6 +65,10 @@ class Activities:
             self.compare_recent,
         ]
 
+    async def _today(self) -> date:
+        tz = await self.db.get_setting("timezone") or local_timezone()
+        return datetime.now(ZoneInfo(tz)).date()
+
     async def _ai(self) -> AI:
         s = self.settings
         models = role_models(await self.db.get_setting("models"), s.chat_model, s.embed_model)
@@ -88,7 +93,7 @@ class Activities:
 
     async def _plan(self, products: list, reddit: bool) -> pipeline.SearchPlan:
         s = self.settings
-        today = datetime.now(UTC).date()
+        today = await self._today()
         async with httpx.AsyncClient() as client:
             try:
                 account = await self._account(client) if reddit else None
@@ -202,7 +207,7 @@ class Activities:
                     product_id=args.product_id,
                     phrase=args.phrase,
                     source="reddit",
-                    day=datetime.now(UTC).date(),
+                    day=await self._today(),
                     fetch=fetch,
                 )
             except sources.PlanExhaustedError as exc:
@@ -261,7 +266,7 @@ class Activities:
                         product_id=plan.id,
                         phrase=phrase,
                         source="hn",
-                        day=datetime.now(UTC).date(),
+                        day=await self._today(),
                         fetch=fetch,
                     )
                 except sources.SourceError as exc:

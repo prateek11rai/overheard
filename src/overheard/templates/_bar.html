@@ -6,7 +6,7 @@
       <details class="pd"><summary class="caret" title="{{ t.name }} menu" aria-label="{{ t.name }} menu">▾</summary>
         <div class="pop menu" style="top:48px;left:0">
           <a class="mi" href="/products/{{ t.id }}/edit">Edit what it listens for</a>
-          <button class="mi" type="button" hx-post="/api/products/{{ t.id }}/check" hx-swap="none">Check now <span class="cost">{{ t.cost }} search{{ '' if t.cost == 1 else 'es' }}</span></button>
+          <button class="mi" type="button" hx-post="/api/products/{{ t.id }}/check" hx-swap="none"{% if t.checking %} disabled title="Already running"{% endif %}>{{ 'Checking…' if t.checking else 'Check now' }} <span class="cost">{{ t.cost }} search{{ '' if t.cost == 1 else 'es' }}</span></button>
           {% if t.paused %}<button class="mi" type="button" hx-post="/api/products/{{ t.id }}/resume" hx-swap="none">Resume</button>{% else %}<button class="mi" type="button" hx-post="/api/products/{{ t.id }}/pause" hx-swap="none">Pause</button>{% endif %}
           <button class="mi danger" type="button" data-dialog-open="del-{{ t.id }}">Delete…</button>
         </div>
@@ -25,7 +25,7 @@
           <div class="opts">{% for p in presets %}<label class="opt mono"><input type="radio" name="time" value="{{ p }}"{% if p == morning_time %} checked{% endif %}>{{ p }}</label>{% endfor %}</div>
         </form>
         <div class="row between small" style="margin-top:18px"><span class="dim">{% if last_run %}Last run · {{ last_run[0] }} · <span class="{{ 'ok' if last_run[1] in ('done', 'hn_only') else 'bad' if last_run[1] == 'failed' else 'dim' }}">{{ {'done': 'done', 'hn_only': 'done', 'failed': 'failed', 'running': 'running'}[last_run[1]] }}</span>{% else %}No runs yet{% endif %}</span><a class="link" href="/runs">Run log →</a></div>
-        <div class="row" style="margin-top:16px"><button class="btn primary" type="button" hx-post="/api/runs/now" hx-swap="none">Run now</button><span class="badge">{{ run_cost }} search{{ '' if run_cost == 1 else 'es' }}</span></div>
+        <div class="row" style="margin-top:16px"><button class="btn primary" type="button" hx-post="/api/runs/now" hx-swap="none"{% if busy %} disabled title="Already running"{% endif %}>{{ 'Running…' if busy else 'Run now' }}</button><span class="badge">{{ run_cost }} search{{ '' if run_cost == 1 else 'es' }}</span></div>
         <div class="row between" style="margin-top:18px;padding-top:16px;border-top:2px solid var(--s0)"><span>Pause all listening</span><button class="switch{% if paused_all %} on{% endif %}" type="button" role="switch" aria-checked="{{ 'true' if paused_all else 'false' }}" aria-label="Pause all listening" hx-post="/api/schedule/pause-all" hx-swap="none"></button></div>
       </div>
     </details>

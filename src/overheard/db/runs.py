@@ -112,6 +112,16 @@ class RunQueries(DatabaseCore):
             Run, self._runs_query("") + " ORDER BY r.started_at DESC, r.id DESC LIMIT %s", (limit,)
         )
 
+    async def running_runs(self) -> list[Run]:
+        """Runs whose row still says running.
+
+        Returns:
+            The runs, oldest first.
+        """
+        return await self._rows(
+            Run, self._runs_query("WHERE r.status = 'running'") + " ORDER BY r.started_at"
+        )
+
     async def run(self, run_id: int) -> Run | None:
         """One run by id.
 
@@ -198,7 +208,7 @@ class RunQueries(DatabaseCore):
             The ledger row, or None.
         """
         return await self._one(
-            "SELECT idempotency_key, result_count, results FROM search_ledger "
+            "SELECT idempotency_key, run_key, result_count, results FROM search_ledger "
             "WHERE idempotency_key = %s",
             (key,),
         )
@@ -248,10 +258,24 @@ class RunQueries(DatabaseCore):
             Result dicts from all of that run's searches for the product.
         """
         rows = await self._all(
-            "SELECT results FROM search_ledger WHERE run_key = %s AND product_id = %s ORDER BY id",
+            "SELECT l.results FROM search_ledger l JOIN search_uses u ON u.idempotency_key = "
+            "l.idempotency_key WHERE u.run_key = %s AND l.product_id = %s ORDER BY l.id",
             (run_key, product_id),
         )
         return [item for r in rows for item in r["results"]]
+
+    async def ledger_use(self, run_key: str, key: str) -> None:
+        """Record that a run used a saved search (paid by it or by an earlier run).
+
+        Args:
+            run_key: The run (workflow id).
+            key: The search's idempotency key.
+        """
+        await self._exec(
+            "INSERT INTO search_uses (run_key, idempotency_key) VALUES (%s, %s) "
+            "ON CONFLICT DO NOTHING",
+            (run_key, key),
+        )
 
     async def reddit_used(self, since: date) -> int:
         """Reddit searches spent since a day (inclusive).

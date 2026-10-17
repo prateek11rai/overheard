@@ -313,3 +313,62 @@ def test_blank_password_on_another_host_refuses_to_start(tmp_path, monkeypatch):
     from overheard import cli
 
     assert cli._web(s) == 2
+
+
+class FakeHandle:
+    def __init__(self, client, wid):
+        self.client, self.wid = client, wid
+
+    async def describe(self):
+        from types import SimpleNamespace
+
+        return SimpleNamespace(status=self.client.status_of(self.wid))
+
+
+class FakeTemporal:
+    """Just enough of a Temporal client: every known workflow is running."""
+
+    def __init__(self, running=()):
+        self.running = set(running)
+        self.started = []
+
+    def status_of(self, wid):
+        from temporalio.client import WorkflowExecutionStatus
+
+        return (
+            WorkflowExecutionStatus.RUNNING
+            if wid in self.running
+            else WorkflowExecutionStatus.COMPLETED
+        )
+
+    def get_workflow_handle(self, wid):
+        return FakeHandle(self, wid)
+
+    async def start_workflow(self, *args, **kwargs):
+        self.started.append(kwargs["id"])
+        self.running.add(kwargs["id"])
+
+    def get_schedule_handle(self, _):
+        raise RuntimeError("no schedules in this fake")
+
+
+def test_a_second_run_now_is_refused_while_one_runs(client, monkeypatch):
+    fake = FakeTemporal()
+
+    async def connect(_settings):
+        return fake
+
+    monkeypatch.setattr("overheard.workflows.connect", connect)
+    r = client.post("/api/runs/now", headers=ask("/runs"))
+    assert "Morning brief started" in trig(r) and len(fake.started) == 1
+    page = client.get("/runs").text
+    assert re.search(r'<button[^>]*hx-post="/api/runs/now"[^>]*disabled', page)
+    r = client.post("/api/runs/now", headers=ask("/runs"))
+    assert "Already running" in trig(r) and len(fake.started) == 1
+    pid = re.search(r"/api/products/(\d+)/check", page).group(1)
+    r = client.post(f"/api/products/{pid}/check", headers=ask("/runs"))
+    assert "Already running" in trig(r) and len(fake.started) == 1
+    # Once Temporal says it finished, both work again.
+    fake.running.clear()
+    r = client.post(f"/api/products/{pid}/check", headers=ask("/runs"))
+    assert "Checking" in trig(r) and len(fake.started) == 2

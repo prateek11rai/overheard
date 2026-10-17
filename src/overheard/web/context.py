@@ -35,6 +35,33 @@ DONE_MESSAGES = {
 }
 
 
+OOB_PAGES = {
+    "_bar.html": lambda path: path != "/setup",
+    "_runs_main.html": lambda path: path == "/runs",
+    "_runs_runnow.html": lambda path: path == "/runs",
+    "_run_steps.html": lambda path: path == "/runs",
+    "_timepick.html": lambda path: path == "/settings",
+    "_settings_products.html": lambda path: path == "/settings",
+    "_reddit_plan.html": lambda path: path == "/settings",
+    "_brief_main.html": lambda path: path.startswith("/p/") and path.count("/") == 2,
+    "_phrase_badge.html": lambda path: path.startswith("/products/"),
+}
+
+
+def oob_target_on(template: str, path: str) -> bool:
+    """Whether an out-of-band fragment's target exists on the page at `path`.
+
+    Args:
+        template: The fragment's template name.
+        path: The requesting page's path (from HX-Current-URL).
+
+    Returns:
+        True when the page has the target (unknown fragments are always sent).
+    """
+    check = OOB_PAGES.get(template)
+    return True if check is None else check(path)
+
+
 class Web:
     """What every route shares: settings, templates, the database pool and page helpers."""
 
@@ -113,6 +140,13 @@ class Web:
             local = last.started_at.astimezone(zone)
             day = "today" if local.date() == datetime.now(zone).date() else f"{local:%a %d %b}"
             last_text = (f"{day} {local:%H:%M}", last.status)
+        running = await self._db().running_runs()
+        busy = any(r.kind in ("morning", "check") for r in running)
+        morning_running = any(r.kind == "morning" for r in running)
+        for tab in tabs:
+            tab["checking"] = morning_running or any(
+                r.kind == "check" and r.product_id == tab["id"] for r in running
+            )
         active_tab = next((t for t in tabs if t["active"]), None)
         count = active_tab["count"] if active_tab else sum(t["count"] for t in tabs)
         return {
@@ -126,6 +160,7 @@ class Web:
             "has_demo": any(p.demo for p in products),
             "title_count": count,
             "temporal_ui": self.settings.temporal_ui_url,
+            "busy": busy,
         }
 
     def _page(
@@ -147,7 +182,10 @@ class Web:
         parts = []
         if name:
             parts.append(self.templates.get_template(name).render({**ctx, "request": request}))
+        path = self._current_path(request)
         for o in oob or []:
+            if not oob_target_on(o, path):
+                continue
             parts.append(
                 self.templates.get_template(o).render({**ctx, "request": request, "oob": True})
             )

@@ -53,6 +53,7 @@ class LedgerOnly:
 
     def __init__(self) -> None:
         self.rows: dict[str, dict] = {}
+        self.uses: set[tuple[str, str]] = set()
 
     async def ledger_get(self, key):
         return self.rows.get(key)
@@ -60,6 +61,9 @@ class LedgerOnly:
     async def ledger_save(self, key, run_key, day, product_id, phrase, source, results):
         self.rows.setdefault(key, {"results": results})
         return True
+
+    async def ledger_use(self, run_key, key):
+        self.uses.add((run_key, key))
 
 
 class FakeActivities:

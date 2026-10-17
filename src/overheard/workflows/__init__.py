@@ -227,9 +227,11 @@ WORKFLOWS = [MorningBrief, ProductScan, Reembed, CompareRecent]
 with workflow.unsafe.imports_passed_through():
     from overheard.workflows.activities import Activities
     from overheard.workflows.runtime import (
+        AlreadyRunningError,
         build_schedule,
         connect,
         ensure_schedule,
+        live_runs,
         parse_time,
         run_brief_now,
         run_worker,
@@ -244,6 +246,8 @@ with workflow.unsafe.imports_passed_through():
     )
 
 __all__ = [
+    "AlreadyRunningError",
+    "live_runs",
     "Activities",
     "CompareRecent",
     "DEFAULT_TIME",

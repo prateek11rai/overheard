@@ -116,11 +116,13 @@ def register(app: FastAPI, web: Web) -> None:
             return web._toast_only("That product is gone")
         try:
             await workflows.start_check(await web._temporal(), web._db(), product.id, product.slug)
+        except workflows.AlreadyRunningError:
+            return web._toast_only("Already running")
         except Exception:
             return web._toast_only("Temporal isn't running. Start it with uv run overheard start")
-        return web._fragment(
-            request, None, await web._chrome(request), toast=f"Checking {product.name} now"
-        )
+        ctx = {**await web._chrome(request), **await web._runs_ctx(None)}
+        oob = ["_bar.html", "_runs_main.html"]
+        return web._fragment(request, None, ctx, toast=f"Checking {product.name} now", oob=oob)
 
     @app.post("/api/schedule/time", response_class=HTMLResponse)
     async def schedule_time(request: Request, time: str = Form(...)) -> Response:
@@ -154,13 +156,13 @@ def register(app: FastAPI, web: Web) -> None:
     async def run_now(request: Request) -> Response:
         try:
             await workflows.start_run_now(await web._temporal(), web._db())
+        except workflows.AlreadyRunningError:
+            return web._toast_only("Already running")
         except Exception:
             return web._toast_only("Temporal isn't running. Start it with uv run overheard start")
         ctx = {**await web._chrome(request), **await web._runs_ctx(None)}
-        oob = ["_runs_main.html"] if web._current_path(request) == "/runs" else []
-        return web._fragment(
-            request, None, ctx, toast="Morning brief started", oob=["_bar.html", *oob]
-        )
+        oob = ["_bar.html", "_runs_main.html"]
+        return web._fragment(request, None, ctx, toast="Morning brief started", oob=oob)
 
     @app.get("/api/runs/{run_id}/row", response_class=HTMLResponse)
     async def run_row(request: Request, run_id: int, sel: int | None = None) -> Response:
@@ -175,6 +177,12 @@ def register(app: FastAPI, web: Web) -> None:
             html += web.templates.get_template("_run_steps.html").render(
                 {"selected": view, "groups": groups, "request": request, "oob": True}
             )
+        if r.status != "running":
+            ctx = await web._chrome(request)
+            for name in ("_bar.html", "_runs_runnow.html"):
+                html += web.templates.get_template(name).render(
+                    {**ctx, "request": request, "oob": True}
+                )
         return HTMLResponse(html)
 
     @app.post("/api/models/use", response_class=HTMLResponse)

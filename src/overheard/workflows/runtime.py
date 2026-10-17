@@ -243,6 +243,52 @@ async def temporal_status(settings: Settings) -> dict[str, Any]:
     return out
 
 
+class AlreadyRunningError(RuntimeError):
+    """A run that would overlap is still going."""
+
+
+STALE_GRACE = timedelta(seconds=60)
+
+
+async def live_runs(client: Any, db: Database) -> list[Any]:
+    """Runs marked running that Temporal is really still running.
+
+    A row whose workflow Temporal no longer runs (finished without updating the row,
+    terminated, or unknown) is marked failed on the way. Rows younger than a minute are
+    trusted, since their workflow may be starting right now.
+
+    Args:
+        client: Temporal client.
+        db: Database.
+
+    Returns:
+        The live runs.
+    """
+    from temporalio.client import WorkflowExecutionStatus
+    from temporalio.service import RPCError, RPCStatusCode
+
+    live = []
+    now = datetime.now(UTC)
+    for run in await db.running_runs():
+        try:
+            desc = await client.get_workflow_handle(run.workflow_id).describe()
+            status = desc.status
+        except RPCError as exc:
+            if exc.status != RPCStatusCode.NOT_FOUND:
+                raise
+            status = None
+        if (
+            status == WorkflowExecutionStatus.RUNNING
+            or status is None
+            and now - run.started_at < STALE_GRACE
+        ):
+            live.append(run)
+        else:
+            name = status.name.lower() if status is not None else "unknown to Temporal"
+            await db.finish_run(run.id, "failed", f"stopped: {name}")
+    return live
+
+
 async def start_run_now(client: Any, db: Database, reddit: bool = True) -> str:
     """Start the morning job by hand and show it in the Run log at once.
 
@@ -253,7 +299,12 @@ async def start_run_now(client: Any, db: Database, reddit: bool = True) -> str:
 
     Returns:
         The workflow id.
+
+    Raises:
+        AlreadyRunningError: If a morning run or a check is still going.
     """
+    if any(r.kind in ("morning", "check") for r in await live_runs(client, db)):
+        raise AlreadyRunningError("a run is still going")
     wid = f"run-now-{datetime.now(UTC):%Y%m%dT%H%M%S%f}"
     await db.upsert_run(wid, "morning")
     await client.start_workflow(
@@ -276,7 +327,13 @@ async def start_check(client: Any, db: Database, product_id: int, slug: str) -> 
 
     Returns:
         The workflow id.
+
+    Raises:
+        AlreadyRunningError: If a morning run or a check of this product is still going.
     """
+    for r in await live_runs(client, db):
+        if r.kind == "morning" or (r.kind == "check" and r.product_id == product_id):
+            raise AlreadyRunningError("a run is still going")
     wid = f"check-{slug}-{datetime.now(UTC):%Y%m%dT%H%M%S%f}"
     await db.upsert_run(wid, "check", product_id)
     await client.start_workflow(

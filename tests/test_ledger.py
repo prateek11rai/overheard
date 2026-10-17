@@ -12,7 +12,7 @@ def found(n: int) -> list[Post]:
     ]
 
 
-async def test_search_once_spends_one_search_per_run_and_phrase(db):
+async def test_two_runs_on_the_same_day_spend_each_phrase_once(db):
     product = await add_product(db)
     calls = 0
 
@@ -34,11 +34,35 @@ async def test_search_once_spends_one_search_per_run_and_phrase(db):
     assert calls == 1
     assert (spent1, spent2) == (True, False)
     assert again == first
-    assert await db.reddit_used(date(2026, 10, 1)) == 1
 
-    _, spent3 = await search_once(db, **{**args, "run_key": "morning-2"})
-    assert spent3 and calls == 2
+    # Run now later the same day (or an overlapping run) reuses the paid result.
+    _, spent3 = await search_once(db, **{**args, "run_key": "run-now-2"})
+    assert not spent3 and calls == 1
+    assert await db.reddit_used(date(2026, 10, 1)) == 1
+    # Each run still sees the results it used.
+    assert len(await db.ledger_results("morning-1", product.id)) == 3
+    assert len(await db.ledger_results("run-now-2", product.id)) == 3
+
+    # The next day pays again.
+    _, spent4 = await search_once(db, **{**args, "run_key": "morning-3", "day": date(2026, 10, 19)})
+    assert spent4 and calls == 2
     assert await db.reddit_used(date(2026, 10, 1)) == 2
+
+
+async def test_hacker_news_stays_live_on_every_run(db):
+    product = await add_product(db)
+    calls = 0
+
+    async def fetch():
+        nonlocal calls
+        calls += 1
+        return found(1)
+
+    base = dict(product_id=product.id, phrase="p", source="hn", day=date(2026, 10, 18), fetch=fetch)
+    await search_once(db, run_key="a", **base)
+    await search_once(db, run_key="a", **base)
+    await search_once(db, run_key="b", **base)
+    assert calls == 2
 
 
 async def test_hn_searches_are_not_counted_against_the_plan(db):
@@ -59,6 +83,12 @@ async def test_hn_searches_are_not_counted_against_the_plan(db):
     assert await db.reddit_used(date(2026, 10, 1)) == 0
 
 
-def test_ledger_key_is_stable():
-    assert ledger_key("r", 1, "reddit", "Meal Plan") == ledger_key("r", 1, "reddit", "meal plan")
-    assert ledger_key("r", 1, "reddit", "x") != ledger_key("r", 1, "hn", "x")
+def test_ledger_key_is_per_day_for_reddit_and_per_run_for_hacker_news():
+    day = date(2026, 10, 18)
+    assert ledger_key("r1", 1, "reddit", "Meal Plan", day) == ledger_key(
+        "r2", 1, "reddit", "meal plan", day
+    )
+    assert ledger_key("r1", 1, "hn", "x", day) != ledger_key("r2", 1, "hn", "x", day)
+    assert ledger_key("r1", 1, "reddit", "x", day) != ledger_key(
+        "r1", 1, "reddit", "x", date(2026, 10, 19)
+    )

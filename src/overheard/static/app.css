@@ -200,3 +200,6 @@ tr.pick.cur td{background:color-mix(in srgb,var(--mauve) 10%,var(--base))}
 .subs-only{display:none}
 form:has(input[name=subs_mode][value=only]:checked) .subs-only{display:block}
 .caret,.tri{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}
+.btn:disabled,.mi:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.btn:disabled:hover{transform:none;box-shadow:3px 3px 0 var(--crust)}
+.btn.primary:disabled:hover{box-shadow:4px 4px 0 var(--sh-mauve)}

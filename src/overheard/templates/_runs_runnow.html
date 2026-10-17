@@ -1,0 +1,1 @@
+<button class="btn" id="runs-runnow" type="button" hx-post="/api/runs/now" hx-swap="none"{% if oob %} hx-swap-oob="true"{% endif %}{% if busy %} disabled title="Already running"{% endif %}>{{ 'Running…' if busy else 'Run now' }}</button>

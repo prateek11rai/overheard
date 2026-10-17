@@ -166,19 +166,25 @@ def make_plan(
 # search ledger
 
 
-def ledger_key(run_key: str, product_id: int, source: str, phrase: str) -> str:
-    """The idempotency key of one search in one run.
+def ledger_key(run_key: str, product_id: int, source: str, phrase: str, day: date) -> str:
+    """The idempotency key of one search.
+
+    A Reddit search is paid for once per day, product and phrase, so any run that day
+    (scheduled, Run now, Check now, a retry or an overlapping run) reuses it. Hacker News is
+    free and searched live on every run.
 
     Args:
         run_key: The run (workflow id).
         product_id: Product id.
         source: reddit or hn.
         phrase: The phrase.
+        day: The day, in the schedule's timezone.
 
     Returns:
         The key.
     """
-    return f"{run_key}|{product_id}|{source}|{phrase.casefold()}"
+    scope = day.isoformat() if source == "reddit" else run_key
+    return f"{scope}|{product_id}|{source}|{phrase.casefold()}"
 
 
 async def search_once(
@@ -191,7 +197,7 @@ async def search_once(
     day: date,
     fetch: Callable[[], Awaitable[list[FoundPost]]],
 ) -> tuple[list[FoundPost], bool]:
-    """Run a search at most once per run: a retry or restart reuses the saved result.
+    """Search at most once per key; a retry, a restart or another run that day reuses it.
 
     Args:
         db: Database.
@@ -199,18 +205,20 @@ async def search_once(
         product_id: Product id.
         phrase: The phrase.
         source: reddit or hn.
-        day: The day the search counts against.
+        day: The day the search counts against, in the schedule's timezone.
         fetch: Does the actual search.
 
     Returns:
         (posts, whether a search was spent now).
     """
-    key = ledger_key(run_key, product_id, source, phrase)
+    key = ledger_key(run_key, product_id, source, phrase, day)
     saved = await db.ledger_get(key)
     if saved is not None:
+        await db.ledger_use(run_key, key)
         return [FoundPost.from_json(d) for d in saved["results"]], False
     posts = await fetch()
     await db.ledger_save(
         key, run_key, day, product_id, phrase, source, [p.to_json() for p in posts]
     )
+    await db.ledger_use(run_key, key)
     return posts, True
