@@ -26,12 +26,14 @@ class DatabaseCore:
             raise ValueError("schema must be a plain identifier")
         self.dsn = dsn
         self.schema = schema
+        # Session-level settings: transaction-mode poolers (e.g. PgBouncer) aren't supported.
+        self.connect_kwargs = {"options": f"-c search_path={schema},public"}
         self.pool = AsyncConnectionPool(
             dsn,
             open=False,
             min_size=1,
             max_size=max_size,
-            kwargs={"autocommit": True, "row_factory": dict_row},
+            kwargs={"autocommit": True, "row_factory": dict_row, **self.connect_kwargs},
             configure=self._configure,
         )
         self._timescale: bool | None = None
@@ -95,7 +97,9 @@ class DatabaseCore:
             RuntimeError: If the pgvector extension is missing and can't be created.
         """
         applied: list[str] = []
-        async with await psycopg.AsyncConnection.connect(self.dsn, autocommit=True) as conn:
+        async with await psycopg.AsyncConnection.connect(
+            self.dsn, autocommit=True, **self.connect_kwargs
+        ) as conn:
             cur = await conn.execute("SELECT 1 FROM pg_extension WHERE extname = 'vector'")
             if await cur.fetchone() is None:
                 try:

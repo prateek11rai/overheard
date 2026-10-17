@@ -33,3 +33,11 @@ async def test_migrate_twice_only_touches_its_schema():
     health = await db.health()
     await db.close()
     assert health["pgvector"] and health["tables"] >= 10
+
+
+async def test_connections_get_the_schema_at_connect_time():
+    db = Database(TEST_DSN, SCHEMA)
+    assert f"search_path={SCHEMA},public" in db.connect_kwargs["options"]
+    async with await psycopg.AsyncConnection.connect(TEST_DSN, **db.connect_kwargs) as conn:
+        cur = await conn.execute("SHOW search_path")
+        assert (await cur.fetchone())[0].replace('"', "") == f"{SCHEMA}, public"

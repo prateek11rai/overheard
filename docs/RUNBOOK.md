@@ -63,7 +63,7 @@ Environment variables win over `.env`; `.env` is read only when present. Only `D
 | `TEMPORAL_UI_URL` | `http://127.0.0.1:8233` | the Run log's "Temporal UI" link |
 | `OVERHEARD_HOST` · `OVERHEARD_PORT` | `127.0.0.1` · `8000` | deploying (any other host needs `OVERHEARD_PASSWORD`) |
 | `OVERHEARD_PASSWORD` | empty | any non-local host: every page asks for it (HTTP Basic, any user name) |
-| `OVERHEARD_DB_SCHEMA` | `overheard` | sharing a database |
+| `OVERHEARD_DB_SCHEMA` | `overheard` | sharing a database. Overheard sets `search_path` per connection (in the connection options and with `SET`), so connect directly or through a session-mode pooler; transaction-mode poolers (PgBouncer `pool_mode=transaction`, Supavisor transaction mode) aren't supported. |
 | `OVERHEARD_DATA_DIR` | `.data` | moving local files (digests, Temporal state) |
 | `OVERHEARD_TEMPORAL_BIN` | Homebrew's (`$(brew --prefix)/bin/temporal`) | the Temporal CLI lives elsewhere (`start` and the tests use it; nothing is ever downloaded) |
 | `OVERHEARD_OFFLINE` | `false` | developing without network: no SerpApi or Hacker News calls (searches are skipped and say so in the Run log) |
