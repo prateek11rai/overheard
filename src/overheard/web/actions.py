@@ -283,7 +283,7 @@ def register(app: FastAPI, web: Web) -> None:
             await web._db().set_setting("default_recipient", emails[0])
         recipient = await web._db().get_setting("default_recipient") or web.settings.smtp_user
         try:
-            message = await mail.send_test(web.settings, recipient)
+            message = await mail.send_test(web.settings, recipient, await web._tz())
         except Exception:
             message = "The test email failed. Check SMTP_* in .env"
         ctx = await web._chrome(request)

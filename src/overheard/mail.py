@@ -10,7 +10,7 @@ from pathlib import Path
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from overheard.db import Database, Product
-from overheard.pipeline import Brief, safe_filename
+from overheard.pipeline import Brief, safe_filename, today_in
 from overheard.settings import Settings
 
 TEMPLATES = Path(__file__).parent / "templates" / "email"
@@ -102,7 +102,15 @@ def run_tag(run: str) -> str:
     return re.sub(r"[^a-z0-9]", "", run.lower())[-28:] or "run"
 
 
-def write_file(settings: Settings, slug: str, subject: str, html: str, run: str = "run") -> Path:
+def write_file(
+    settings: Settings,
+    slug: str,
+    subject: str,
+    html: str,
+    run: str = "run",
+    tz: str | None = None,
+    now: datetime | None = None,
+) -> Path:
     """Write a digest to `.data/digests/<date>-<run>-<slug>.html` (`EMAIL_MODE=file`).
 
     Args:
@@ -111,13 +119,16 @@ def write_file(settings: Settings, slug: str, subject: str, html: str, run: str 
         subject: The subject (kept in the HTML title).
         html: The email HTML.
         run: The run it belongs to.
+        tz: The schedule's timezone, which dates the morning (default: the first-run one).
+        now: The current time (for tests).
 
     Returns:
         The file written.
     """
     folder = settings.digests_dir
     folder.mkdir(parents=True, exist_ok=True)
-    name = f"{datetime.now(UTC):%Y-%m-%d}-{run_tag(run)}-{safe_filename(slug)}.html"
+    day = today_in(tz or settings.default_timezone(), now or datetime.now(UTC))
+    name = f"{day:%Y-%m-%d}-{run_tag(run)}-{safe_filename(slug)}.html"
     path = folder / name
     path.write_text(html, encoding="utf-8")
     return path
@@ -155,6 +166,7 @@ async def deliver(
     brief: Brief,
     run_key: str = "",
     recipients: list[str] | None = None,
+    tz: str | None = None,
 ) -> str:
     """Send, save or skip a product's morning email, by `EMAIL_MODE`.
 
@@ -166,6 +178,7 @@ async def deliver(
         brief: Its brief.
         run_key: The run (unused in the message, kept for logs).
         recipients: Override the product's recipients.
+        tz: The schedule's timezone, which dates a saved digest.
 
     Returns:
         What happened, for the Run log.
@@ -178,7 +191,7 @@ async def deliver(
     else:
         subject, html, text = render_digest(settings, product, brief)
     if settings.email_mode == "file":
-        write_file(settings, product.slug, subject, html, run=run_key or "run")
+        write_file(settings, product.slug, subject, html, run=run_key or "run", tz=tz)
         return "Digest saved to .data/digests"
     if settings.email_mode != "smtp":
         return "Email off · digest in the app"
@@ -212,6 +225,7 @@ async def deliver_once(
     brief: Brief,
     run_key: str,
     recipients: list[str] | None = None,
+    tz: str | None = None,
 ) -> str:
     """Send (or save) a product's digest at most once per run, like the search ledger.
 
@@ -225,6 +239,7 @@ async def deliver_once(
         brief: Its brief.
         run_key: The run (workflow id).
         recipients: Override the product's recipients.
+        tz: The schedule's timezone, which dates a saved digest.
 
     Returns:
         What happened, for the Run log.
@@ -236,7 +251,7 @@ async def deliver_once(
             return f"{done['outcome']} · not sent again"
         return "Already being sent · not sent again"
     try:
-        outcome = await deliver(settings, product, brief, run_key, recipients)
+        outcome = await deliver(settings, product, brief, run_key, recipients, tz)
     except BaseException:
         await db.digest_release(key)
         raise
@@ -247,12 +262,13 @@ async def deliver_once(
     return outcome
 
 
-async def send_test(settings: Settings, recipient: str | None) -> str:
+async def send_test(settings: Settings, recipient: str | None, tz: str | None = None) -> str:
     """Send (or save) a short test email.
 
     Args:
         settings: App settings.
         recipient: Where to send it.
+        tz: The schedule's timezone, which dates a saved test.
 
     Returns:
         A short message for a toast.
@@ -260,7 +276,7 @@ async def send_test(settings: Settings, recipient: str | None) -> str:
     html = _env.get_template("test.html").render({"link": settings.app_url})
     subject = "Overheard: test email"
     if settings.email_mode == "file":
-        path = write_file(settings, "test", subject, html, run="test")
+        path = write_file(settings, "test", subject, html, run="test", tz=tz)
         return f"Test email saved to {path}"
     if settings.email_mode != "smtp" or not settings.smtp_host:
         return "Email is off, so nothing was sent. Add SMTP_* to .env to send email."

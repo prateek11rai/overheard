@@ -4,7 +4,7 @@ import pytest
 from temporalio.testing import ActivityEnvironment
 
 from overheard import mail
-from overheard.pipeline import brief_for
+from overheard.pipeline import brief_for, today_in
 from overheard.sources import Post as Found
 from overheard.workflows import Activities, ScanArgs
 from tests.conftest import add_product
@@ -42,8 +42,8 @@ async def test_a_retried_send_digest_sends_one_email(db, test_settings, monkeypa
         monkeypatch.setattr(
             mail,
             "write_file",
-            lambda s, slug, subject, html, run="run": (
-                sent.append(subject) or real_write(s, slug, subject, html, run)
+            lambda s, slug, subject, html, run="run", **kw: (
+                sent.append(subject) or real_write(s, slug, subject, html, run, **kw)
             ),
         )
     product, run_id = await prepared(db, f"wf-digest-{mode}")
@@ -129,3 +129,31 @@ def test_digest_file_names_include_the_run(test_settings):
     path = mail.write_file(test_settings, "mealwise", "s", "<p>x</p>", run="run-now-20261018T0700")
     assert path.name.endswith("-runnow20261018t0700-mealwise.html")
     assert path.name[:10].count("-") == 2
+
+
+def test_digest_file_dates_follow_the_schedule_timezone(test_settings):
+    evening_utc = datetime(2026, 10, 17, 20, 0, tzinfo=UTC)
+    tokyo = mail.write_file(
+        test_settings, "mealwise", "s", "<p>x</p>", run="r", tz="Asia/Tokyo", now=evening_utc
+    )
+    la = mail.write_file(
+        test_settings,
+        "mealwise",
+        "s",
+        "<p>x</p>",
+        run="r",
+        tz="America/Los_Angeles",
+        now=evening_utc,
+    )
+    assert tokyo.name.startswith("2026-10-18-")
+    assert la.name.startswith("2026-10-17-")
+
+
+@pytest.mark.parametrize("zone", ["Pacific/Kiritimati", "Etc/GMT+12"])
+async def test_send_digest_names_the_file_by_the_schedules_day(db, test_settings, zone):
+    await db.set_setting("timezone", zone)
+    product, run_id = await prepared(db, "wf-day")
+    acts = Activities(test_settings, db)
+    await ActivityEnvironment().run(acts.send_digest, ScanArgs(product.id, run_id, "wf-day", None))
+    [path] = test_settings.digests_dir.glob("*.html")
+    assert path.name.startswith(today_in(zone).isoformat() + "-")

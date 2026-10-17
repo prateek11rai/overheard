@@ -201,7 +201,7 @@ async def load(db: Database, settings: Settings) -> dict[str, Product]:
             subject, html, _ = mail.render_quiet(settings, product)
         else:
             subject, html, _ = mail.render_digest(settings, product, brief)
-        mail.write_file(settings, product.slug, subject, html, run="demo")
+        mail.write_file(settings, product.slug, subject, html, "demo", str(zone), base)
     return products
 
 
