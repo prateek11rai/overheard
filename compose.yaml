@@ -1,0 +1,54 @@
+services:
+  db:
+    image: pgvector/pgvector:0.8.7-pg17
+    environment:
+      POSTGRES_DB: overheard
+      POSTGRES_USER: overheard
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes: [db:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U overheard -d overheard"]
+      interval: 5s
+      retries: 20
+
+  temporal:
+    image: temporalio/temporal:1.9.1
+    command: server start-dev --ip 0.0.0.0 --db-filename /data/temporal.db
+    volumes: [temporal:/data]
+    ports: ["127.0.0.1:8233:8233"]
+
+  ollama:
+    image: ollama/ollama:0.40.2
+    volumes: [ollama:/root/.ollama]
+
+  setup:
+    build: .
+    command: overheard setup
+    env_file: .env
+    depends_on:
+      db: { condition: service_healthy }
+    restart: "no"
+
+  worker:
+    build: .
+    command: overheard worker
+    env_file: .env
+    depends_on:
+      setup: { condition: service_completed_successfully }
+      temporal: { condition: service_started }
+      ollama: { condition: service_started }
+    restart: unless-stopped
+
+  web:
+    build: .
+    command: overheard web
+    env_file: .env
+    ports: ["127.0.0.1:8000:8000"]
+    depends_on:
+      setup: { condition: service_completed_successfully }
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=3)"]
+      interval: 30s
+    restart: unless-stopped
+
+volumes: { db: {}, temporal: {}, ollama: {} }
