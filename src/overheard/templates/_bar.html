@@ -3,7 +3,7 @@
   <nav class="tabs">
     {%- for t in tabs %}
     <div class="tabwrap"><a class="tab{% if t.active %} on{% endif %}{% if t.paused %} paused{% endif %}" href="/p/{{ t.slug }}"><span class="ws">{{ loop.index }}</span>{{ t.name }}{% if t.paused %}<span class="pz">paused</span>{% elif t.count %}<span class="n">{{ t.count }}</span>{% endif %}</a>
-      <details class="pd"><summary class="caret" title="{{ t.name }} menu" aria-label="{{ t.name }} menu">▾</summary>
+      <details class="pd"><summary class="caret" title="{{ t.name }} menu" aria-label="{{ t.name }} menu"><svg width="10" height="6" viewBox="0 0 10 6" aria-hidden="true"><path d="M0 0h10L5 6z" fill="currentColor"/></svg></summary>
         <div class="pop menu" style="top:48px;left:0">
           <a class="mi" href="/products/{{ t.id }}/edit">Edit what it listens for</a>
           <button class="mi" type="button" hx-post="/api/products/{{ t.id }}/check" hx-swap="none"{% if t.checking %} disabled title="Already running"{% endif %}>{{ 'Checking…' if t.checking else 'Check now' }} <span class="cost">{{ t.cost_text }}</span></button>

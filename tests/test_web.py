@@ -615,3 +615,9 @@ def test_out_of_band_fragments_only_go_where_their_target_is(client):
     assert not oob_target_on("_bar.html", "/setup")
     assert oob_target_on("_brief_main.html", "/p/demo-mealwise")
     assert not oob_target_on("_brief_main.html", "/p/demo-mealwise/review")
+
+
+def test_tab_caret_is_a_visible_labelled_triangle(client):
+    bar = client.get("/p/demo-mealwise").text.split("</header>")[0]
+    caret = re.search(r'<summary class="caret"[^>]*>(.*?)</summary>', bar, re.S)
+    assert caret and "<svg" in caret.group(1) and 'aria-label="Mealwise menu"' in caret.group(0)

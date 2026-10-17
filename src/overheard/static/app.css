@@ -206,3 +206,5 @@ form:has(input[name=subs_mode][value=only]:checked) .subs-only{display:block}
 .tzlist{max-height:140px;overflow:auto;margin-top:8px;padding:2px 6px 8px 2px}
 .opt.sm{font-size:12.5px;padding:4px 9px}
 .progress i.done{background:color-mix(in srgb,var(--mauve) 45%,var(--s1))}
+summary.caret{display:inline-flex;align-items:center;padding:8px 6px;color:var(--sub0);cursor:pointer}
+summary.caret:hover,details[open]>summary.caret{color:var(--text)}
