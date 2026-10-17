@@ -1,0 +1,30 @@
+{{ brief.headline }}
+{{ brief.subline }}
+{% if brief.worth_a_reply %}
+
+Worth a reply
+{% for c in brief.worth_a_reply %}
+- {{ c.post.title }} ({{ c.post.community }})
+  {{ c.post.url }}
+{% endfor %}
+{% endif %}
+{% if brief.pain_points %}
+
+Pain points
+{% for b in brief.pain_points %}
+- {{ b.name }}{% if b.trend == 'new' %} (new){% endif %}
+
+{% for q in b.lines %}
+  "{{ q.quote }}"
+{% endfor %}
+{% endfor %}
+{% endif %}
+{% if brief.mentions %}
+
+Mentions
+{% for m in brief.mentions %}
+- {{ m.label_text }}: "{{ m.quote }}"
+{% endfor %}
+{% endif %}
+
+Open the brief: {{ link }}
