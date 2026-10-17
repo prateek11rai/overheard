@@ -1,0 +1,38 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Design review · overheard mockup</title><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="styles.css?v=11"><script src="app.js?v=11"></script></head><body><main class="wrap wide" style="padding-top:60px">
+  <a class="mark" href="02-brief.html" style="font-size:21px"><svg width="30" height="30" viewBox="0 0 34 34" aria-hidden="true"><rect x="6" y="6" width="26" height="26" fill="#89b4fa"/><rect x="2" y="2" width="26" height="26" fill="#cba6f7" stroke="#11111b" stroke-width="2"/><g fill="#11111b" stroke="#11111b" stroke-width="2.4" stroke-linecap="round"><circle cx="11.2" cy="12.6" r="3.1" stroke="none"/><path d="M14.3 12.8c0 3.8-1.6 6.4-4.6 7.9" fill="none"/><circle cx="19.4" cy="12.6" r="3.1" stroke="none"/><path d="M22.5 12.8c0 3.8-1.6 6.4-4.6 7.9" fill="none"/></g></svg>overheard</a>
+  <h1 style="margin-top:26px">Design review · v4</h1>
+  <p class="sub">Dark only. Hacktoberfest-style edges. Sample products: Mealwise (meal planning from your fridge), Shipnote (release notes from merged PRs), Plantpal (paused). This page is for review; it is not part of the app.</p>
+
+  <section class="section">
+    <h2>Screens</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
+      <a class="block" href="02-brief.html" style="text-decoration:none"><h3 class="link">Morning brief →</h3></a>
+      <a class="block" href="03-review.html" style="text-decoration:none"><h3 class="link">Review mode →</h3></a>
+      <a class="block" href="01-setup.html" style="text-decoration:none"><h3 class="link">Setup →</h3></a>
+      <a class="block" href="04-add-product.html" style="text-decoration:none"><h3 class="link">Add a product →</h3></a>
+      <a class="block" href="05-themes.html" style="text-decoration:none"><h3 class="link">Themes →</h3></a>
+      <a class="block" href="06-runs.html" style="text-decoration:none"><h3 class="link">Run log →</h3></a>
+      <a class="block" href="07-settings.html" style="text-decoration:none"><h3 class="link">Settings →</h3></a>
+      <a class="block" href="08-email.html" style="text-decoration:none"><h3 class="link">Morning email →</h3></a>
+      <a class="block" href="09-brand.html" style="text-decoration:none"><h3 class="link">Logo →</h3></a>
+      <a class="block" href="10-readme-banner.html" style="text-decoration:none"><h3 class="link">README banner →</h3></a>
+      <a class="block" href="11-devto-cover.html" style="text-decoration:none"><h3 class="link">DEV post cover →</h3></a>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>What changed in v4</h2>
+    <div class="block">
+      <ul style="margin:0;padding-left:20px;line-height:1.9">
+        <li><b>Links look like links:</b> mauve and underlined. <span class="mono">→</span> stays in the app, <span class="mono">↗</span> opens the thread. Post titles are links.</li>
+        <li><b>Actions are buttons:</b> a bright edge and a hard shadow, and they press in when clicked. Plain text is never mauve or underlined.</li>
+        <li><b>Choices fill:</b> every option, model and time fills with mauve when picked. No browser dropdowns: the time is a themed grid (◷ in the top bar, and Settings).</li>
+        <li><b>Less text:</b> no eyebrows above titles; one short line under each title; the Reddit cost is a small equation (7 phrases × 1 a day = 217 this month) with a plan meter.</li>
+        <li><b>Build notes are separate:</b> every explanation meant for the build agent is a dashed yellow <span class="mono">agent-note</span> block, hidden by default. Turn them on with "build notes on/off" (bottom right).</li>
+        <li><b>Keyboard toolbar removed:</b> shortcuts now live only in review mode, printed inside the buttons they trigger (Skip <span class="mono">S</span>, Done <span class="mono">D</span>, Copy <span class="mono">C</span>), with a "Keyboard shortcuts" link. Mouse users never need them.</li>
+        <li><b>Logo:</b> the quote mark in a square, redrawn with the same block and hard-shadow edges.</li>
+      </ul>
+    </div>
+  </section>
+</main>
+<div class="toast" id="toast"><span>Marked done</span><a class="link small" href="#" onclick="this.parentNode.classList.remove('show');return false">Undo</a></div><div class="mock">mockup · <a href="index.html">all screens</a> · <a href="#" onclick="toggleNotes();return false">build notes on/off</a></div></body></html>

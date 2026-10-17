@@ -1,0 +1,51 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Review · overheard mockup</title><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="styles.css?v=11"><script src="app.js?v=11"></script></head><body data-review><header class="bar">
+  <a class="mark" href="02-brief.html"><svg width="28" height="28" viewBox="0 0 34 34" aria-hidden="true"><rect x="6" y="6" width="26" height="26" fill="#89b4fa"/><rect x="2" y="2" width="26" height="26" fill="#cba6f7" stroke="#11111b" stroke-width="2"/><g fill="#11111b" stroke="#11111b" stroke-width="2.4" stroke-linecap="round"><circle cx="11.2" cy="12.6" r="3.1" stroke="none"/><path d="M14.3 12.8c0 3.8-1.6 6.4-4.6 7.9" fill="none"/><circle cx="19.4" cy="12.6" r="3.1" stroke="none"/><path d="M22.5 12.8c0 3.8-1.6 6.4-4.6 7.9" fill="none"/></g></svg>overheard</a>
+  <nav class="tabs"><div class="tabwrap"><a class="tab on" href="02-brief.html"><span class="ws">1</span>Mealwise<span class="n">7</span></a><button class="caret" data-pop onclick="pop('m-mealwise',event)" title="Mealwise menu">▾</button>
+<div class="pop menu" id="m-mealwise" style="top:48px;left:0"><a href="04-add-product.html">Edit what it listens for</a><a href="#" data-done="Checking Mealwise now">Check now <span class="cost">5 searches</span></a><a href="#" data-done="Mealwise paused">Pause</a><a href="#" class="danger">Delete…</a></div></div><div class="tabwrap"><a class="tab" href="02-brief.html"><span class="ws">2</span>Shipnote<span class="n">3</span></a><button class="caret" data-pop onclick="pop('m-shipnote',event)" title="Shipnote menu">▾</button>
+<div class="pop menu" id="m-shipnote" style="top:48px;left:0"><a href="04-add-product.html">Edit what it listens for</a><a href="#" data-done="Checking Shipnote now">Check now <span class="cost">2 searches</span></a><a href="#" data-done="Shipnote paused">Pause</a><a href="#" class="danger">Delete…</a></div></div><div class="tabwrap"><a class="tab paused" href="07-settings.html"><span class="ws">3</span>Plantpal</a><button class="caret" data-pop onclick="pop('m-plantpal',event)" title="Plantpal menu">▾</button>
+<div class="pop menu" id="m-plantpal" style="top:48px;left:0"><a href="04-add-product.html">Edit what it listens for</a><a href="#" data-done="Checking Plantpal now">Check now <span class="cost">0 searches</span></a><a href="#" data-done="Plantpal paused">Pause</a><a href="#" class="danger">Delete…</a></div></div><a class="tab" href="04-add-product.html" title="Add a product">＋ Add</a></nav>
+  <div class="right" style="position:relative">
+    <button class="btn" data-pop onclick="pop('sched',event)">◷ Daily at 07:00</button>
+    <a class="btn" href="07-settings.html">Settings</a>
+    <div class="pop" id="sched" style="top:54px;right:0;width:380px">
+      <h3>Every morning at</h3>
+      <div style="margin-top:14px"><div class="opts"><span class="opt mono">06:00</span><span class="opt mono">06:30</span><span class="opt mono on">07:00</span><span class="opt mono">07:30</span><span class="opt mono">08:00</span><span class="opt mono">08:30</span><span class="opt mono">09:00</span><span class="opt mono">09:30</span></div></div>
+      <div class="row between small" style="margin-top:18px"><span class="dim">Last run · today 07:00 · <span class="ok">done</span></span><a class="link" href="06-runs.html">Run log →</a></div>
+      <div class="row" style="margin-top:16px"><a class="btn primary" href="#" data-done="Morning brief started">Run now</a><span class="badge">7 searches</span></div>
+      <div class="row between" style="margin-top:18px;padding-top:16px;border-top:2px solid var(--s0)"><span>Pause all listening</span><span class="switch"></span></div>
+      <aside class="agent-note">Run now = the same Temporal workflow as the schedule, started by hand. The badge is the Reddit search cost of one run (phrases across active products). Changing the time updates the Temporal schedule.</aside>
+    </div>
+  </div>
+</header><main class="wrap" style="max-width:780px">
+  <div class="row between">
+    <a class="link" href="02-brief.html">← Back to the brief</a>
+    <div class="row"><span class="progress"><i class="cur"></i><i></i><i></i><i></i><i></i><i></i><i></i></span><span class="mono small dim">1 of 7</span></div>
+  </div>
+
+  <article class="block ask post" style="margin-top:30px;padding:30px 32px">
+    <div class="row between"><span class="lbl ask">asking for a tool</span><span class="src">r/MealPrepSunday · 9h</span></div>
+    <a class="title t" href="#" style="font-size:23px">Is there an app that plans meals from what's already in my fridge?<span class="ext">↗</span></a>
+    <div class="quote" style="font-size:18px">I keep buying the same things and throwing half of it away. Is there <mark>an app that plans the week around what I already have</mark>? Bonus if it uses leftovers first…</div>
+    <div class="checked">✓ quote checked · open the thread before you reply</div>
+
+    <div class="reply">
+      <div class="row between"><b>Your reply</b><span class="src">drafted on this laptop · never posted</span></div>
+      <textarea style="margin-top:12px">Same problem here, which is why I built Mealwise: you tell it what's in the fridge and it plans the week around that, leftovers first, so the spinach actually gets eaten.
+
+Disclosure: I made it. There's a free plan; I'd love to hear what's missing.</textarea>
+      <div class="row" style="margin-top:14px"><a class="btn" href="#" data-done="Reply copied">Copy <span class="k">C</span></a><a class="btn sm">Shorter</a><a class="btn sm">Rewrite</a></div>
+    </div>
+  </article>
+
+  <div class="row" style="margin-top:28px;justify-content:space-between">
+    <a class="btn big" href="#" data-done="Skipped · back tomorrow">Skip <span class="k">S</span></a>
+    <a class="btn primary big" href="#" data-done="Done · next post">Done, next <span class="k">D</span></a>
+  </div>
+  <div class="row" style="margin-top:22px;justify-content:center;position:relative"><a class="link small" href="#" data-pop onclick="pop('keys',event);return false">Keyboard shortcuts</a>
+    <div class="pop" id="keys" style="bottom:34px;width:300px">
+      <table class="small"><tr><td class="mono">D</td><td>Done, next post</td></tr><tr><td class="mono">S</td><td>Skip (back tomorrow)</td></tr><tr><td class="mono">C</td><td>Copy the reply</td></tr><tr><td class="mono">O</td><td>Open the thread</td></tr><tr><td class="mono">?</td><td>This list</td></tr></table>
+    </div>
+  </div>
+  <aside class="agent-note">Review mode is the only place with keyboard shortcuts. No global hint bar, no j/k. Keys are printed inside the buttons they trigger. Done removes the post from the brief; Skip sets snoozed_until to the next morning. Copy copies the textarea (the user may have edited it). The draft always ends with a disclosure line.</aside>
+</main>
+<div class="toast" id="toast"><span>Marked done</span><a class="link small" href="#" onclick="this.parentNode.classList.remove('show');return false">Undo</a></div><div class="mock">mockup · <a href="index.html">all screens</a> · <a href="#" onclick="toggleNotes();return false">build notes on/off</a></div></body></html>

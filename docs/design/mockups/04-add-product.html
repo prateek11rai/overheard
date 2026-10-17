@@ -1,0 +1,54 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Add a product · overheard mockup</title><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="styles.css?v=11"><script src="app.js?v=11"></script></head><body><header class="bar">
+  <a class="mark" href="02-brief.html"><svg width="28" height="28" viewBox="0 0 34 34" aria-hidden="true"><rect x="6" y="6" width="26" height="26" fill="#89b4fa"/><rect x="2" y="2" width="26" height="26" fill="#cba6f7" stroke="#11111b" stroke-width="2"/><g fill="#11111b" stroke="#11111b" stroke-width="2.4" stroke-linecap="round"><circle cx="11.2" cy="12.6" r="3.1" stroke="none"/><path d="M14.3 12.8c0 3.8-1.6 6.4-4.6 7.9" fill="none"/><circle cx="19.4" cy="12.6" r="3.1" stroke="none"/><path d="M22.5 12.8c0 3.8-1.6 6.4-4.6 7.9" fill="none"/></g></svg>overheard</a>
+  <nav class="tabs"><div class="tabwrap"><a class="tab" href="02-brief.html"><span class="ws">1</span>Mealwise<span class="n">7</span></a><button class="caret" data-pop onclick="pop('m-mealwise',event)" title="Mealwise menu">▾</button>
+<div class="pop menu" id="m-mealwise" style="top:48px;left:0"><a href="04-add-product.html">Edit what it listens for</a><a href="#" data-done="Checking Mealwise now">Check now <span class="cost">5 searches</span></a><a href="#" data-done="Mealwise paused">Pause</a><a href="#" class="danger">Delete…</a></div></div><div class="tabwrap"><a class="tab" href="02-brief.html"><span class="ws">2</span>Shipnote<span class="n">3</span></a><button class="caret" data-pop onclick="pop('m-shipnote',event)" title="Shipnote menu">▾</button>
+<div class="pop menu" id="m-shipnote" style="top:48px;left:0"><a href="04-add-product.html">Edit what it listens for</a><a href="#" data-done="Checking Shipnote now">Check now <span class="cost">2 searches</span></a><a href="#" data-done="Shipnote paused">Pause</a><a href="#" class="danger">Delete…</a></div></div><div class="tabwrap"><a class="tab paused" href="07-settings.html"><span class="ws">3</span>Plantpal</a><button class="caret" data-pop onclick="pop('m-plantpal',event)" title="Plantpal menu">▾</button>
+<div class="pop menu" id="m-plantpal" style="top:48px;left:0"><a href="04-add-product.html">Edit what it listens for</a><a href="#" data-done="Checking Plantpal now">Check now <span class="cost">0 searches</span></a><a href="#" data-done="Plantpal paused">Pause</a><a href="#" class="danger">Delete…</a></div></div><a class="tab on" href="04-add-product.html" title="Add a product">＋ Add</a></nav>
+  <div class="right" style="position:relative">
+    <button class="btn" data-pop onclick="pop('sched',event)">◷ Daily at 07:00</button>
+    <a class="btn" href="07-settings.html">Settings</a>
+    <div class="pop" id="sched" style="top:54px;right:0;width:380px">
+      <h3>Every morning at</h3>
+      <div style="margin-top:14px"><div class="opts"><span class="opt mono">06:00</span><span class="opt mono">06:30</span><span class="opt mono on">07:00</span><span class="opt mono">07:30</span><span class="opt mono">08:00</span><span class="opt mono">08:30</span><span class="opt mono">09:00</span><span class="opt mono">09:30</span></div></div>
+      <div class="row between small" style="margin-top:18px"><span class="dim">Last run · today 07:00 · <span class="ok">done</span></span><a class="link" href="06-runs.html">Run log →</a></div>
+      <div class="row" style="margin-top:16px"><a class="btn primary" href="#" data-done="Morning brief started">Run now</a><span class="badge">7 searches</span></div>
+      <div class="row between" style="margin-top:18px;padding-top:16px;border-top:2px solid var(--s0)"><span>Pause all listening</span><span class="switch"></span></div>
+      <aside class="agent-note">Run now = the same Temporal workflow as the schedule, started by hand. The badge is the Reddit search cost of one run (phrases across active products). Changing the time updates the Temporal schedule.</aside>
+    </div>
+  </div>
+</header><main class="wrap">
+  <h1>Add a product</h1>
+  <p class="sub">Two lines and Overheard knows what to listen for.</p>
+
+  <div class="block" style="margin-top:30px">
+    <label class="f" style="margin-top:0">Name</label>
+    <input type="text" value="Mealwise">
+    <label class="f">What it does</label>
+    <textarea>Plans a week of dinners from what's already in your fridge, leftovers first, so less food gets thrown away.</textarea>
+
+    <div class="row between" style="margin:26px 0 10px"><b>Listening for</b><span class="badge">5 phrases · 5 searches a day</span></div>
+    <div class="opts">
+      <span class="chip">meal plan from fridge <span class="x">×</span></span><span class="chip">use up leftovers <span class="x">×</span></span><span class="chip">meal planning app <span class="x">×</span></span><span class="chip">food waste at home <span class="x">×</span></span><span class="chip">pantry recipes <span class="x">×</span></span><span class="chip add">＋ Add</span>
+    </div>
+    <aside class="agent-note">Chips are pre-filled by the chat model from the "What it does" sentence (suggest phrases action). The badge recomputes live: one Reddit search per phrase per morning; Hacker News is free.</aside>
+
+    <label class="f">Morning email</label>
+    <input type="email" value="you@yourmail.com">
+
+    <details class="more">
+      <summary>More options</summary>
+      <label class="f">Competitors</label>
+      <div class="opts"><span class="chip">PlateUp <span class="x">×</span></span><span class="chip add">＋ Add</span></div>
+      <label class="f">Subreddits</label>
+      <div class="opts"><span class="opt on">All of Reddit</span><span class="opt">Only these…</span></div>
+      <label class="f">Listen on</label>
+      <div class="opts"><span class="opt on">Reddit + Hacker News</span><span class="opt">Hacker News only</span></div>
+      <label class="f">Quiet mornings</label>
+      <div class="opts"><span class="opt">Send a short email</span><span class="opt on">Don't email</span></div>
+      <aside class="agent-note">"Only these…" reveals a chip input for subreddits. "Hacker News only" costs 0 searches. Every option group is a real radio group and fills when selected.</aside>
+    </details>
+
+    <div class="row" style="margin-top:30px"><a class="btn primary big" href="02-brief.html">Start listening</a><span class="badge">first check now · 5 searches</span></div>
+  </div>
+</main>
+<div class="toast" id="toast"><span>Marked done</span><a class="link small" href="#" onclick="this.parentNode.classList.remove('show');return false">Undo</a></div><div class="mock">mockup · <a href="index.html">all screens</a> · <a href="#" onclick="toggleNotes();return false">build notes on/off</a></div></body></html>

@@ -1,0 +1,50 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Run log · overheard mockup</title><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="styles.css?v=11"><script src="app.js?v=11"></script></head><body><header class="bar">
+  <a class="mark" href="02-brief.html"><svg width="28" height="28" viewBox="0 0 34 34" aria-hidden="true"><rect x="6" y="6" width="26" height="26" fill="#89b4fa"/><rect x="2" y="2" width="26" height="26" fill="#cba6f7" stroke="#11111b" stroke-width="2"/><g fill="#11111b" stroke="#11111b" stroke-width="2.4" stroke-linecap="round"><circle cx="11.2" cy="12.6" r="3.1" stroke="none"/><path d="M14.3 12.8c0 3.8-1.6 6.4-4.6 7.9" fill="none"/><circle cx="19.4" cy="12.6" r="3.1" stroke="none"/><path d="M22.5 12.8c0 3.8-1.6 6.4-4.6 7.9" fill="none"/></g></svg>overheard</a>
+  <nav class="tabs"><div class="tabwrap"><a class="tab" href="02-brief.html"><span class="ws">1</span>Mealwise<span class="n">7</span></a><button class="caret" data-pop onclick="pop('m-mealwise',event)" title="Mealwise menu">▾</button>
+<div class="pop menu" id="m-mealwise" style="top:48px;left:0"><a href="04-add-product.html">Edit what it listens for</a><a href="#" data-done="Checking Mealwise now">Check now <span class="cost">5 searches</span></a><a href="#" data-done="Mealwise paused">Pause</a><a href="#" class="danger">Delete…</a></div></div><div class="tabwrap"><a class="tab" href="02-brief.html"><span class="ws">2</span>Shipnote<span class="n">3</span></a><button class="caret" data-pop onclick="pop('m-shipnote',event)" title="Shipnote menu">▾</button>
+<div class="pop menu" id="m-shipnote" style="top:48px;left:0"><a href="04-add-product.html">Edit what it listens for</a><a href="#" data-done="Checking Shipnote now">Check now <span class="cost">2 searches</span></a><a href="#" data-done="Shipnote paused">Pause</a><a href="#" class="danger">Delete…</a></div></div><div class="tabwrap"><a class="tab paused" href="07-settings.html"><span class="ws">3</span>Plantpal</a><button class="caret" data-pop onclick="pop('m-plantpal',event)" title="Plantpal menu">▾</button>
+<div class="pop menu" id="m-plantpal" style="top:48px;left:0"><a href="04-add-product.html">Edit what it listens for</a><a href="#" data-done="Checking Plantpal now">Check now <span class="cost">0 searches</span></a><a href="#" data-done="Plantpal paused">Pause</a><a href="#" class="danger">Delete…</a></div></div><a class="tab" href="04-add-product.html" title="Add a product">＋ Add</a></nav>
+  <div class="right" style="position:relative">
+    <button class="btn" data-pop onclick="pop('sched',event)">◷ Daily at 07:00</button>
+    <a class="btn" href="07-settings.html">Settings</a>
+    <div class="pop" id="sched" style="top:54px;right:0;width:380px">
+      <h3>Every morning at</h3>
+      <div style="margin-top:14px"><div class="opts"><span class="opt mono">06:00</span><span class="opt mono">06:30</span><span class="opt mono on">07:00</span><span class="opt mono">07:30</span><span class="opt mono">08:00</span><span class="opt mono">08:30</span><span class="opt mono">09:00</span><span class="opt mono">09:30</span></div></div>
+      <div class="row between small" style="margin-top:18px"><span class="dim">Last run · today 07:00 · <span class="ok">done</span></span><a class="link" href="06-runs.html">Run log →</a></div>
+      <div class="row" style="margin-top:16px"><a class="btn primary" href="#" data-done="Morning brief started">Run now</a><span class="badge">7 searches</span></div>
+      <div class="row between" style="margin-top:18px;padding-top:16px;border-top:2px solid var(--s0)"><span>Pause all listening</span><span class="switch"></span></div>
+      <aside class="agent-note">Run now = the same Temporal workflow as the schedule, started by hand. The badge is the Reddit search cost of one run (phrases across active products). Changing the time updates the Temporal schedule.</aside>
+    </div>
+  </div>
+</header><main class="wrap">
+  <div class="row between"><h1>Run log</h1><a class="btn" href="#" data-done="Morning brief started">Run now</a></div>
+  <p class="sub">One run every morning. If the laptop sleeps, it carries on where it stopped. <a class="link" href="#">Temporal UI ↗</a></p>
+
+  <div class="block" style="margin-top:30px;padding:10px 24px">
+    <table>
+      <tr><th>Morning</th><th>Result</th><th>Searches</th><th>New</th></tr>
+      <tr><td class="mono">Sun 18 Oct</td><td class="ok">done · 3m 12s</td><td class="mono">7</td><td class="mono">15</td></tr>
+      <tr><td class="mono">Sat 17 Oct</td><td class="ok">done · resumed after sleep</td><td class="mono">7</td><td class="mono">8</td></tr>
+      <tr><td class="mono">Fri 16 Oct</td><td class="warn">Hacker News only · search plan used up</td><td class="mono">0</td><td class="mono">3</td></tr>
+    </table>
+  </div>
+
+  <section class="section">
+    <h2>Sun 18 Oct · Mealwise</h2>
+    <div class="block">
+      <ul class="steps">
+        <li><span class="ok">✓</span><span>5 Reddit searches planned</span><span class="src">0.1s</span></li>
+        <li><span class="ok">✓</span><span>Reddit · meal plan from fridge · 9 posts</span><span class="src">1.8s</span></li>
+        <li><span class="warn">↻</span><span>Reddit · use up leftovers · timed out, retried · 7 posts</span><span class="src">12.4s</span></li>
+        <li><span class="ok">✓</span><span>Reddit · 3 more phrases · 15 posts</span><span class="src">4.6s</span></li>
+        <li><span class="ok">✓</span><span>Hacker News · 5 phrases · 5 posts</span><span class="src">2.2s</span></li>
+        <li><span class="ok">✓</span><span>12 new of 36</span><span class="src">0.4s</span></li>
+        <li><span class="warn">↻</span><span>Labelled 12 · 1 quote re-checked</span><span class="src">58s</span></li>
+        <li><span class="ok">✓</span><span>Themes · 1 new</span><span class="src">6.1s</span></li>
+        <li><span class="ok">✓</span><span>Email sent</span><span class="src">1.9s</span></li>
+      </ul>
+    </div>
+  </section>
+  <aside class="agent-note">Each row is a run_steps record for one Temporal activity. ↻ = retried by Temporal. "Resumed after sleep": the workflow continued from history without repeating finished searches (search_ledger idempotency). The Fri row: SerpApi returned plan-exhausted (non-retryable) so the product ran Hacker News only.</aside>
+</main>
+<div class="toast" id="toast"><span>Marked done</span><a class="link small" href="#" onclick="this.parentNode.classList.remove('show');return false">Undo</a></div><div class="mock">mockup · <a href="index.html">all screens</a> · <a href="#" onclick="toggleNotes();return false">build notes on/off</a></div></body></html>

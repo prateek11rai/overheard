@@ -1,0 +1,26 @@
+Overheard
+Copyright (c) 2026 prateek11rai. Released under the MIT License (see LICENSE).
+
+This project includes or builds on the following third-party work:
+
+Catppuccin (Mocha palette)
+  https://github.com/catppuccin/catppuccin
+  MIT License, Copyright (c) 2021 Catppuccin.
+  The colours in src/overheard/static/app.css come from the Mocha flavour.
+
+IBM Plex Sans (release @ibm/plex-sans@1.1.0)
+  https://github.com/IBM/plex
+  SIL Open Font License 1.1, Copyright (c) 2017 IBM Corp. with Reserved Font Name "Plex".
+  Files: src/overheard/static/fonts/IBMPlexSans-*.woff2, licence in
+  src/overheard/static/fonts/IBMPlexSans-LICENSE.txt
+
+JetBrains Mono (release v2.304)
+  https://github.com/JetBrains/JetBrainsMono
+  SIL Open Font License 1.1, Copyright 2020 The JetBrains Mono Project Authors.
+  Files: src/overheard/static/fonts/JetBrainsMono-*.woff2, licence in
+  src/overheard/static/fonts/JetBrainsMono-OFL.txt
+
+htmx (release v2.0.10)
+  https://github.com/bigskysoftware/htmx
+  Zero-Clause BSD (0BSD).
+  File: src/overheard/static/htmx.min.js, licence in src/overheard/static/htmx-LICENSE.txt

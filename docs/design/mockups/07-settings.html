@@ -1,0 +1,80 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Settings · overheard mockup</title><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="styles.css?v=11"><script src="app.js?v=11"></script></head><body><header class="bar">
+  <a class="mark" href="02-brief.html"><svg width="28" height="28" viewBox="0 0 34 34" aria-hidden="true"><rect x="6" y="6" width="26" height="26" fill="#89b4fa"/><rect x="2" y="2" width="26" height="26" fill="#cba6f7" stroke="#11111b" stroke-width="2"/><g fill="#11111b" stroke="#11111b" stroke-width="2.4" stroke-linecap="round"><circle cx="11.2" cy="12.6" r="3.1" stroke="none"/><path d="M14.3 12.8c0 3.8-1.6 6.4-4.6 7.9" fill="none"/><circle cx="19.4" cy="12.6" r="3.1" stroke="none"/><path d="M22.5 12.8c0 3.8-1.6 6.4-4.6 7.9" fill="none"/></g></svg>overheard</a>
+  <nav class="tabs"><div class="tabwrap"><a class="tab" href="02-brief.html"><span class="ws">1</span>Mealwise<span class="n">7</span></a><button class="caret" data-pop onclick="pop('m-mealwise',event)" title="Mealwise menu">▾</button>
+<div class="pop menu" id="m-mealwise" style="top:48px;left:0"><a href="04-add-product.html">Edit what it listens for</a><a href="#" data-done="Checking Mealwise now">Check now <span class="cost">5 searches</span></a><a href="#" data-done="Mealwise paused">Pause</a><a href="#" class="danger">Delete…</a></div></div><div class="tabwrap"><a class="tab" href="02-brief.html"><span class="ws">2</span>Shipnote<span class="n">3</span></a><button class="caret" data-pop onclick="pop('m-shipnote',event)" title="Shipnote menu">▾</button>
+<div class="pop menu" id="m-shipnote" style="top:48px;left:0"><a href="04-add-product.html">Edit what it listens for</a><a href="#" data-done="Checking Shipnote now">Check now <span class="cost">2 searches</span></a><a href="#" data-done="Shipnote paused">Pause</a><a href="#" class="danger">Delete…</a></div></div><div class="tabwrap"><a class="tab paused" href="07-settings.html"><span class="ws">3</span>Plantpal</a><button class="caret" data-pop onclick="pop('m-plantpal',event)" title="Plantpal menu">▾</button>
+<div class="pop menu" id="m-plantpal" style="top:48px;left:0"><a href="04-add-product.html">Edit what it listens for</a><a href="#" data-done="Checking Plantpal now">Check now <span class="cost">0 searches</span></a><a href="#" data-done="Plantpal paused">Pause</a><a href="#" class="danger">Delete…</a></div></div><a class="tab" href="04-add-product.html" title="Add a product">＋ Add</a></nav>
+  <div class="right" style="position:relative">
+    <button class="btn" data-pop onclick="pop('sched',event)">◷ Daily at 07:00</button>
+    <a class="btn" href="07-settings.html">Settings</a>
+    <div class="pop" id="sched" style="top:54px;right:0;width:380px">
+      <h3>Every morning at</h3>
+      <div style="margin-top:14px"><div class="opts"><span class="opt mono">06:00</span><span class="opt mono">06:30</span><span class="opt mono on">07:00</span><span class="opt mono">07:30</span><span class="opt mono">08:00</span><span class="opt mono">08:30</span><span class="opt mono">09:00</span><span class="opt mono">09:30</span></div></div>
+      <div class="row between small" style="margin-top:18px"><span class="dim">Last run · today 07:00 · <span class="ok">done</span></span><a class="link" href="06-runs.html">Run log →</a></div>
+      <div class="row" style="margin-top:16px"><a class="btn primary" href="#" data-done="Morning brief started">Run now</a><span class="badge">7 searches</span></div>
+      <div class="row between" style="margin-top:18px;padding-top:16px;border-top:2px solid var(--s0)"><span>Pause all listening</span><span class="switch"></span></div>
+      <aside class="agent-note">Run now = the same Temporal workflow as the schedule, started by hand. The badge is the Reddit search cost of one run (phrases across active products). Changing the time updates the Temporal schedule.</aside>
+    </div>
+  </div>
+</header><main class="wrap">
+  <h1>Settings</h1>
+
+  <section class="section">
+    <h2>Products</h2>
+    <div class="block" style="padding:8px 24px">
+      <table>
+        <tr><td><b>Mealwise</b></td><td class="ok small">listening</td><td style="text-align:right"><a class="btn sm" href="04-add-product.html">Edit</a> <a class="btn sm" href="#" data-done="Mealwise paused">Pause</a></td></tr>
+        <tr><td><b>Shipnote</b></td><td class="ok small">listening</td><td style="text-align:right"><a class="btn sm" href="04-add-product.html">Edit</a> <a class="btn sm" href="#" data-done="Shipnote paused">Pause</a></td></tr>
+        <tr><td><b>Plantpal</b></td><td class="faint small">paused</td><td style="text-align:right"><a class="btn sm" href="#" data-done="Plantpal resumed">Resume</a></td></tr>
+      </table>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>Every morning</h2>
+    <div class="block">
+      <div class="set"><div class="k">Time</div><div><div class="timepick"><button class="timebtn" data-pop onclick="pop('tp',event)"><span class="v">07:00</span><span class="tz">Asia/Kolkata ▾</span></button>
+<div class="pop timegrid" id="tp"><div class="opts"><span class="opt mono">06:00</span><span class="opt mono">06:30</span><span class="opt mono on">07:00</span><span class="opt mono">07:30</span><span class="opt mono">08:00</span><span class="opt mono">08:30</span><span class="opt mono">09:00</span><span class="opt mono">09:30</span></div><div class="row between" style="margin-top:14px"><span class="small dim">Exact time</span><span class="row" style="gap:8px"><span class="btn sm">−5</span><span class="mono">07:00</span><span class="btn sm">+5</span></span></div></div></div></div></div>
+      <div class="set"><div class="k">Reddit searches</div><div>
+        <div class="eq"><span class="term">7 phrases</span><span class="op">×</span><span class="term">1 a day</span><span class="op">=</span><span class="term res">217 this month</span></div>
+        <div class="meter"><i style="width:87%"></i></div>
+        <div class="row between small" style="margin-top:8px"><span class="dim">Your SerpApi plan: 250</span><span class="badge ok">fits</span></div>
+        <aside class="agent-note">Read-only, no setting. Plan size and searches left come from SerpApi account.json. Projection = phrases × days in month (shown) checked against searches left minus a 10% reserve. If it doesn't fit: badge "rotating", and each product shows "phrases checked every N days". No key: show "Reddit off · Hacker News only" with a link to add SERPAPI_API_KEY in .env.</aside>
+      </div></div>
+      <div class="set"><div class="k">Email</div><div class="row"><span class="badge ok">✓ connected</span><a class="btn sm" href="#" data-done="Test email sent">Send a test</a></div></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>Model</h2>
+    <div class="block">
+      <div class="set"><div class="k">Chat</div><div>
+        <div class="card-opt on"><span class="dot"></span><span><b class="mono">gemma4:e4b</b></span><span class="badge ok">in use · loaded</span></div>
+        <div class="card-opt"><span class="dot"></span><span><b class="mono">qwen3:4b</b></span><span class="badge">installed</span></div>
+        <div class="card-opt"><span class="dot"></span><span><b class="mono">llama3.2:3b</b></span><span class="badge">installed</span></div>
+        <div style="margin-top:14px;position:relative"><a class="link small" href="#" data-pop onclick="pop('addchat',event);return false">＋ Add a model</a>
+          <div class="pop" id="addchat" style="top:30px;left:0;width:380px"><b>Run this, it shows up here in a few seconds</b><div class="row" style="margin-top:12px"><span class="badge" style="flex:1">ollama pull qwen3:4b</span><a class="btn sm" href="#" data-done="Copied">Copy</a></div></div></div>
+      </div></div>
+      <div class="set"><div class="k">Embeddings</div><div>
+        <div class="card-opt on"><span class="dot"></span><span><b class="mono">embeddinggemma:300m</b></span><span class="badge ok">in use · 768-d</span></div>
+        <div class="card-opt"><span class="dot"></span><span><b class="mono">nomic-embed-text</b></span><span class="badge">installed · 768-d</span></div>
+        <div style="margin-top:14px;position:relative"><a class="link small" href="#" data-pop onclick="pop('addemb',event);return false">＋ Add an embedding model</a>
+          <div class="pop" id="addemb" style="top:30px;left:0;width:380px"><b>Run this, it shows up here in a few seconds</b><div class="row" style="margin-top:12px"><span class="badge" style="flex:1">ollama pull nomic-embed-text</span><a class="btn sm" href="#" data-done="Copied">Copy</a></div></div></div>
+      </div></div>
+      <details class="more"><summary>Compare models</summary>
+        <table style="margin-top:12px"><tr><th>Model</th><th>Right label</th><th>Quote checks out</th><th>Per post</th><th></th></tr>
+          <tr><td class="mono">gemma4:e4b</td><td>—</td><td>—</td><td>—</td><td class="small dim">in use</td></tr>
+          <tr><td class="mono">qwen3:4b</td><td>—</td><td>—</td><td>—</td><td><a class="btn sm" href="#" data-done="Now using qwen3:4b">Use</a></td></tr>
+          <tr><td class="mono">llama3.2:3b</td><td>—</td><td>—</td><td>—</td><td><a class="btn sm" href="#" data-done="Now using llama3.2:3b">Use</a></td></tr></table>
+        <div class="row" style="margin-top:14px"><a class="btn sm" href="#" data-done="Comparing on your last 50 posts">Compare on my last 50 posts</a></div>
+      </details>
+      <aside class="agent-note">Badges: "in use" = picked here; "loaded" = in memory now (Ollama /api/ps); "installed" = on disk (/api/tags, split into chat vs embeddings by /api/show capabilities; dimension from embedding_length); "unreachable" when the server is down. Refresh every 10 s while this page is open. Lists what Ollama has installed (/api/tags) or the models an OpenAI-compatible LLM_BASE_URL reports. Switching embeddings starts the re-embed workflow. The table is filled only by `uv run overheard eval --model A --model B` (checked set) and by "Compare on my last 50 posts" (runs the second model on real posts without changing any labels and shows where the two disagree); blank until real runs. "Use" switches the chat model in one click.</aside>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>Your data</h2>
+    <div class="block row"><a class="btn" href="#" data-done="CSV downloaded">Export CSV</a><a class="btn danger" href="#">Delete everything</a></div>
+  </section>
+</main>
+<div class="toast" id="toast"><span>Marked done</span><a class="link small" href="#" onclick="this.parentNode.classList.remove('show');return false">Undo</a></div><div class="mock">mockup · <a href="index.html">all screens</a> · <a href="#" onclick="toggleNotes();return false">build notes on/off</a></div></body></html>
