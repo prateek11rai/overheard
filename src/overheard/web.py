@@ -328,11 +328,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return JSONResponse({"ok": True, "tables": health["tables"]})
 
     @app.get("/", response_class=HTMLResponse)
-    async def home() -> Response:
+    async def home(request: Request) -> Response:
         products = await db().products()
+        done = request.query_params.get("done")
+        suffix = f"?done={done}" if done in DONE_MESSAGES else ""
         if not products:
-            return RedirectResponse("/setup", status_code=303)
-        return RedirectResponse(f"/p/{products[0].slug}", status_code=303)
+            return RedirectResponse(f"/setup{suffix}", status_code=303)
+        return RedirectResponse(f"/p/{products[0].slug}{suffix}", status_code=303)
 
     async def brief_ctx(request: Request, product: Product) -> dict[str, Any]:
         brief = await pipeline.brief_for(db(), product, await tz())
@@ -810,7 +812,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def product_changed(request: Request, message: str) -> Response:
         ctx = await chrome(request)
         ctx["products"] = await db().products()
-        oob = ["_bar.html", "_settings_products.html"]
+        oob = ["_bar.html"]
+        if current_path(request) == "/settings":
+            oob.append("_settings_products.html")
         slug = active_slug(request)
         product = await db().product_by_slug(slug) if slug else None
         if product is not None and not current_path(request).endswith(("/review", "/themes")):
