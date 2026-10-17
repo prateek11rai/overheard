@@ -13,7 +13,7 @@
       <div class="set"><div class="k">Time</div><div>{% include "_timepick.html" %}</div></div>
       <div class="set"><div class="k">Reddit searches</div><div>{% include "_reddit_plan.html" %}</div></div>
       <div class="set"><div class="k">Email</div><div class="row">
-        {% if email_mode == 'smtp' %}<span class="badge ok">✓ connected</span>{% elif email_mode == 'file' %}<span class="badge">file · {{ digests_dir }}</span>{% else %}<span class="badge">not set · digests stay in the app</span>{% endif %}
+        {% if email_mode == 'smtp' %}<span class="badge ok">✓ smtp</span><span class="small dim">to your own mailbox (SMTP_USER) unless a product lists its own</span>{% elif email_mode == 'file' %}<span class="badge">file · {{ digests_dir }}</span>{% else %}<span class="badge">not set · digests stay in the app</span>{% endif %}
         <button class="btn sm" type="button" hx-post="/api/email/test" hx-swap="none">Send a test</button>
       </div></div>
     </div>

@@ -14,7 +14,7 @@
       <b>Morning email</b>
       <form class="row" style="margin-top:12px" hx-post="/api/email/test" hx-target="#main" hx-swap="innerHTML">
         <input type="hidden" name="target" value="setup">
-        <input type="email" name="email" value="{{ recipient }}" placeholder="you@yourmail.com" style="flex:1" aria-label="Your email">
+        <input type="email" name="email" value="{{ recipient }}" placeholder="your own mailbox (SMTP_USER)" style="flex:1" aria-label="Your email">
         <button class="btn" type="submit">Send a test</button>
       </form>
       {% if not steps_done[1] %}<div style="margin-top:10px"><a class="link small" href="#" hx-post="/api/email/skip" hx-target="#main" hx-swap="innerHTML">Skip for now</a></div>{% endif %}

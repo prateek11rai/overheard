@@ -69,7 +69,7 @@ Environment variables win over `.env`; `.env` is read only when present. Only `D
 | `OVERHEARD_TEMPORAL_BIN` | Homebrew's (`$(brew --prefix)/bin/temporal`) | the Temporal CLI lives elsewhere (`start` and the tests use it; nothing is ever downloaded) |
 | `OVERHEARD_OFFLINE` | `false` | developing without network: no SerpApi or Hacker News calls (searches are skipped and say so in the Run log) |
 
-The morning time and timezone, pause-all, products, recipients and model choices are set in the app and stored in the database (table `settings`), not in the environment.
+The morning time and timezone, pause-all, products, recipients and model choices are set in the app and stored in the database (table `settings`), not in the environment. A product with no recipients sends its digest to your own mailbox (`SMTP_USER`); the app and its logs never show that address, and a failed send is recorded by error name only.
 
 ## Demo data
 

@@ -134,9 +134,26 @@ def write_file(
     return path
 
 
+class MailError(RuntimeError):
+    """Sending failed. The message names the error, never an address."""
+
+
+def _failure(exc: BaseException) -> str:
+    code = getattr(exc, "smtp_code", None)
+    return f"Email failed: {type(exc).__name__}" + (f" {code}" if code else "")
+
+
 def _send_smtp(settings: Settings, to: list[str], subject: str, html: str, text: str) -> None:
     if not settings.smtp_host:
         raise RuntimeError("SMTP_HOST is not set")
+    try:
+        _smtp_send(settings, to, subject, html, text)
+    except (smtplib.SMTPException, OSError) as exc:
+        # SMTP errors quote addresses back; keep them out of run steps, Temporal and logs.
+        raise MailError(_failure(exc)) from None
+
+
+def _smtp_send(settings: Settings, to: list[str], subject: str, html: str, text: str) -> None:
     msg = EmailMessage()
     msg["Subject"] = subject
     msg["From"] = f"Overheard <{settings.email_from or settings.smtp_user}>"
@@ -299,6 +316,9 @@ async def email_test(settings: Settings) -> int:
     """
     try:
         message = await send_test(settings, settings.smtp_user)
+    except MailError as exc:
+        print(f"The test email failed ({exc}). Check SMTP_* in .env")
+        return 1
     except (OSError, smtplib.SMTPException) as exc:
         print(f"The test email failed: {type(exc).__name__}. Check SMTP_* in .env")
         return 1

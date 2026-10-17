@@ -13,7 +13,7 @@
     {% with field="phrases", items=form.phrases %}{% include "_chips.html" %}{% endwith %}
 
     <label class="f" for="f-mail">Morning email</label>
-    <input type="email" id="f-mail" name="recipients" value="{{ form.recipients }}" placeholder="you@yourmail.com" autocomplete="email">
+    <input type="email" id="f-mail" name="recipients" value="{{ form.recipients }}" placeholder="your own mailbox (SMTP_USER)" autocomplete="email">
 
     <details class="more"{% if product and (form.competitors or form.subreddits or form.sources == 'hn' or form.quiet_day_email) %} open{% endif %}>
       <summary>More options</summary>
