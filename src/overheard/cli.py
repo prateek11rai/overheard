@@ -2,6 +2,7 @@ import argparse
 import asyncio
 import contextlib
 import os
+import re
 import shutil
 import signal
 import socket
@@ -9,11 +10,14 @@ import subprocess
 import sys
 import threading
 import time
+from collections.abc import Callable
 from urllib.parse import urlsplit
 
 from overheard.settings import Settings, TemporalNotFoundError, get_settings, temporal_binary
 
 OK, BAD, LATER = "✓", "✗", "·"
+_LEVEL = re.compile(r"\blevel=(WARN|ERROR)\b")
+_GIN_STATUS = re.compile(r"^\[GIN\][^|]*\|\s*(\d{3})\s*\|")
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -192,11 +196,35 @@ async def _doctor(settings: Settings) -> int:
     return 1 if failures else 0
 
 
+def ollama_line_shown(line: str) -> bool:
+    """Whether a line from `ollama serve` belongs in `start`'s output: warnings and errors only.
+
+    Args:
+        line: One line of Ollama's output.
+
+    Returns:
+        True for `level=WARN`/`level=ERROR` lines, 5xx request lines and fatal errors.
+    """
+    if _LEVEL.search(line):
+        return True
+    gin = _GIN_STATUS.match(line)
+    if gin:
+        return int(gin.group(1)) >= 500
+    return line.lstrip().lower().startswith(("error", "panic", "fatal"))
+
+
 class _Children:
     def __init__(self) -> None:
         self.procs: list[tuple[str, subprocess.Popen]] = []
+        self.pumps: list[threading.Thread] = []
 
-    def spawn(self, name: str, cmd: list[str], env: dict | None = None) -> subprocess.Popen:
+    def spawn(
+        self,
+        name: str,
+        cmd: list[str],
+        env: dict | None = None,
+        keep: Callable[[str], bool] | None = None,
+    ) -> subprocess.Popen:
         proc = subprocess.Popen(
             cmd,
             stdout=subprocess.PIPE,
@@ -206,16 +234,23 @@ class _Children:
             env=env,
             start_new_session=True,
         )
-        threading.Thread(target=self._pump, args=(name, proc), daemon=True).start()
+        pump = threading.Thread(target=self._pump, args=(name, proc, keep), daemon=True)
+        pump.start()
+        self.pumps.append(pump)
         self.procs.append((name, proc))
         return proc
 
     @staticmethod
-    def _pump(name: str, proc: subprocess.Popen) -> None:
+    def _pump(name: str, proc: subprocess.Popen, keep: Callable[[str], bool] | None) -> None:
         if proc.stdout is None:
             return
         for line in proc.stdout:
-            print(f"[{name}] {line.rstrip()}", flush=True)
+            if keep is None or keep(line):
+                print(f"[{name}] {line.rstrip()}", flush=True)
+
+    def join_output(self, timeout: float) -> None:
+        for pump in self.pumps:
+            pump.join(timeout)
 
     def stop(self) -> None:
         for _, proc in reversed(self.procs):
@@ -246,7 +281,8 @@ def _start(settings: Settings) -> int:
         if not _port_open(llm_host, llm_port):
             if settings.is_default_ollama and shutil.which("ollama"):
                 print("Starting ollama serve")
-                children.spawn("ollama", [shutil.which("ollama") or "ollama", "serve"], env)
+                ollama = [shutil.which("ollama") or "ollama", "serve"]
+                children.spawn("ollama", ollama, env, keep=ollama_line_shown)
                 if not _wait_port(llm_host, llm_port, 20):
                     print("Ollama didn't start. Run `ollama serve` and try again.")
                     return 1
