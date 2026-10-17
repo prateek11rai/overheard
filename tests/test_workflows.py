@@ -6,7 +6,8 @@ from collections import defaultdict
 from datetime import date
 
 import pytest
-from temporalio import activity
+from temporalio import activity, workflow
+from temporalio.common import RetryPolicy
 from temporalio.client import WorkflowFailureError
 from temporalio.exceptions import ApplicationError
 from temporalio.testing import WorkflowEnvironment
@@ -165,6 +166,8 @@ class FakeActivities:
     @activity.defn(name="update_themes")
     async def update_themes(self, args: ScanArgs) -> int:
         await self._step("update_themes")
+        if self.fail.get("update_themes"):
+            raise ApplicationError(self.fail["update_themes"], non_retryable=True)
         return 0
 
     @activity.defn(name="send_digest")
@@ -411,3 +414,47 @@ async def test_runs_temporal_no_longer_runs_are_marked_failed(db):
     assert sorted(r.workflow_id for r in alive) == ["live-run", "young-run"]
     stopped = await db.run(old)
     assert stopped.status == "failed" and stopped.note == "stopped: terminated"
+
+
+@workflow.defn(sandboxed=False)
+class SlowStep:
+    @workflow.run
+    async def run(self) -> str:
+        from datetime import timedelta
+
+        return await workflow.execute_activity(
+            "slow_model_call",
+            start_to_close_timeout=timedelta(seconds=30),
+            heartbeat_timeout=timedelta(seconds=1),
+            retry_policy=RetryPolicy(maximum_attempts=1),
+        )
+
+
+@activity.defn(name="slow_model_call")
+async def slow_model_call() -> str:
+    from overheard.workflows import heartbeating
+
+    async with heartbeating(every=0.2):
+        await asyncio.sleep(3)  # a chat call slower than the heartbeat timeout
+    return "labelled"
+
+
+async def test_a_slow_model_call_does_not_time_out_the_activity(env):
+    async with Worker(
+        env.client, task_queue=QUEUE, workflows=[SlowStep], activities=[slow_model_call]
+    ):
+        result = await env.client.execute_workflow(
+            SlowStep.run, id=f"slow-{uuid.uuid4()}", task_queue=QUEUE
+        )
+    assert result == "labelled"
+
+
+async def test_a_theming_failure_still_sends_the_digest(env):
+    fake = FakeActivities(["a"])
+    fake.fail["update_themes"] = "embedding model answered 500"
+    result = await run_morning(env, fake)
+    assert result["status"] == "done"
+    assert fake.calls[-1] == "send_digest"
+    failed = [s for s in fake.steps if s.status == "failed"]
+    assert failed and failed[0].text.startswith("Themes · failed")
+    assert "500" in failed[0].text

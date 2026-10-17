@@ -1,4 +1,7 @@
+import asyncio
+import contextlib
 import time
+from collections.abc import AsyncIterator
 from datetime import UTC, date, datetime, timedelta
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -25,6 +28,36 @@ from overheard.workflows.types import (
     SearchArgs,
     StepArgs,
 )
+
+HEARTBEAT_EVERY = 10.0
+
+
+@contextlib.asynccontextmanager
+async def heartbeating(every: float = HEARTBEAT_EVERY) -> AsyncIterator[None]:
+    """Heartbeat from a background task while the block runs.
+
+    A single chat call to a slow local model can take longer than the heartbeat timeout;
+    this keeps Temporal from treating the activity as dead while it waits.
+
+    Args:
+        every: Seconds between heartbeats.
+
+    Yields:
+        Nothing; the block runs with heartbeats in the background.
+    """
+
+    async def beat() -> None:
+        while True:
+            activity.heartbeat()
+            await asyncio.sleep(every)
+
+    task = asyncio.create_task(beat())
+    try:
+        yield
+    finally:
+        task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await task
 
 
 def _plan_input(p: Any, reddit: bool) -> PlanInput:
@@ -335,7 +368,7 @@ class Activities:
             return 0
         posts = await self.db.unlabelled_posts(product.id)
         rechecked = unverified = 0
-        async with await self._ai() as ai:
+        async with await self._ai() as ai, heartbeating():
             for i, post in enumerate(posts):
                 activity.heartbeat(i)
                 try:
@@ -390,7 +423,7 @@ class Activities:
         if product is None:
             return 0
         new_themes = 0
-        async with await self._ai() as ai:
+        async with await self._ai() as ai, heartbeating():
             model = ai.model_for("embed")
             try:
                 while batch := await self.db.posts_without_embedding(model, product.id, 32):
@@ -506,7 +539,7 @@ class Activities:
         run_id = await self.db.upsert_run(info.workflow_id, "reembed")
         done = 0
         try:
-            async with await self._ai() as ai:
+            async with await self._ai() as ai, heartbeating():
                 while batch := await self.db.posts_without_embedding(args.model, None, 64):
                     activity.heartbeat(done)
                     vectors = await ai.embed(
@@ -543,7 +576,7 @@ class Activities:
 
         info = activity.info()
         run_id = await self.db.upsert_run(info.workflow_id, "compare")
-        async with await self._ai() as ai:
+        async with await self._ai() as ai, heartbeating():
             result = await evals.compare_recent(
                 self.db, ai, args.model, args.limit, heartbeat=activity.heartbeat
             )

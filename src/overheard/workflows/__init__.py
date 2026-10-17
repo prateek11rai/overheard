@@ -138,13 +138,30 @@ class ProductScan:
             ("update_themes", timedelta(minutes=15), timedelta(seconds=90)),
             ("send_digest", timedelta(seconds=90), None),
         ):
-            await workflow.execute_activity(
-                name,
-                args,
-                start_to_close_timeout=timeout,
-                heartbeat_timeout=heartbeat,
-                retry_policy=STEP_RETRY,
-            )
+            try:
+                await workflow.execute_activity(
+                    name,
+                    args,
+                    start_to_close_timeout=timeout,
+                    heartbeat_timeout=heartbeat,
+                    retry_policy=STEP_RETRY,
+                )
+            except ActivityError as err:
+                if name != "update_themes":
+                    raise
+                # Themes are a nice-to-have: email what there is.
+                await workflow.execute_activity(
+                    "record_step",
+                    StepArgs(
+                        args.run_id,
+                        f"themes:{plan.id}",
+                        f"Themes · failed: {_reason(err)}",
+                        "failed",
+                        plan.id,
+                    ),
+                    start_to_close_timeout=timedelta(seconds=20),
+                    retry_policy=STEP_RETRY,
+                )
         return result
 
 
@@ -278,7 +295,7 @@ WORKFLOWS = [MorningBrief, ProductScan, Reembed, CompareRecent]
 
 # Activities and the client helpers run outside the workflow sandbox.
 with workflow.unsafe.imports_passed_through():
-    from overheard.workflows.activities import Activities
+    from overheard.workflows.activities import Activities, heartbeating
     from overheard.workflows.runtime import (
         AlreadyRunningError,
         build_schedule,
@@ -323,6 +340,7 @@ __all__ = [
     "TASK_QUEUE",
     "WORKFLOWS",
     "build_schedule",
+    "heartbeating",
     "connect",
     "ensure_schedule",
     "parse_time",
