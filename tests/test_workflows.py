@@ -319,6 +319,48 @@ async def test_worker_start_creates_the_schedule_and_a_restart_leaves_it(env, db
     assert await ensure_schedule(env.client, db) == "updated"
 
 
+class RacingClient:
+    """Lets every sync see "no schedule yet" before any of them creates it."""
+
+    def __init__(self, client, parties: int) -> None:
+        self.client = client
+        self.barrier = asyncio.Barrier(parties)
+
+    def get_schedule_handle(self, schedule_id):
+        return self.client.get_schedule_handle(schedule_id)
+
+    async def create_schedule(self, *args, **kwargs):
+        await self.barrier.wait()
+        return await self.client.create_schedule(*args, **kwargs)
+
+
+async def test_two_syncs_on_a_fresh_temporal_both_succeed(env):
+    from overheard.workflows import sync_schedule
+
+    racing = RacingClient(env.client, 2)
+    results = await asyncio.gather(
+        sync_schedule(racing, "07:00", "Asia/Kolkata", False),
+        sync_schedule(racing, "07:00", "Asia/Kolkata", False),
+    )
+    assert sorted(results) == ["created", "unchanged"]
+    desc = await _wait_for_schedule(env.client)
+    assert desc.schedule.spec.calendars[0].hour[0].start == 7
+
+
+async def test_a_sync_that_loses_the_race_still_applies_its_settings(env):
+    from overheard.workflows import sync_schedule
+
+    racing = RacingClient(env.client, 2)
+    results = await asyncio.gather(
+        sync_schedule(racing, "07:00", "Asia/Kolkata", False),
+        sync_schedule(racing, "07:00", "Asia/Kolkata", True),
+    )
+    assert "created" in results
+    desc = await _wait_for_schedule(env.client)
+    paused = results[1] != "created"
+    assert desc.schedule.state.paused is paused
+
+
 async def test_a_failing_check_closes_its_run_as_failed(env):
     fake = FakeActivities(["a"])
     fake.fail["search_hn"] = "Hacker News answered 503"

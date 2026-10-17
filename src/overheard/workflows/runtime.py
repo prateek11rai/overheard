@@ -118,8 +118,25 @@ def _schedule_shape(schedule: Any) -> tuple:
     )
 
 
+async def _describe_new(handle: Any, seconds: float = 5) -> Any:
+    from temporalio.service import RPCError, RPCStatusCode
+
+    loop = asyncio.get_running_loop()
+    end = loop.time() + seconds
+    while True:
+        try:
+            return await handle.describe()
+        except RPCError as exc:
+            if exc.status != RPCStatusCode.NOT_FOUND or loop.time() > end:
+                raise
+            await asyncio.sleep(0.2)
+
+
 async def sync_schedule(client: Any, time_of_day: str, tz: str, paused: bool) -> str:
     """Create the `morning-brief` schedule, or update it only if it differs.
+
+    Safe when two processes sync at once (`start` and the worker on a fresh Temporal): the
+    one whose create loses the race updates the schedule instead.
 
     Args:
         client: Temporal client.
@@ -130,7 +147,7 @@ async def sync_schedule(client: Any, time_of_day: str, tz: str, paused: bool) ->
     Returns:
         "created", "updated" or "unchanged".
     """
-    from temporalio.client import ScheduleUpdate
+    from temporalio.client import ScheduleAlreadyRunningError, ScheduleUpdate
     from temporalio.service import RPCError, RPCStatusCode
 
     wanted = build_schedule(time_of_day, tz, paused)
@@ -140,8 +157,11 @@ async def sync_schedule(client: Any, time_of_day: str, tz: str, paused: bool) ->
     except RPCError as exc:
         if exc.status != RPCStatusCode.NOT_FOUND:
             raise
-        await client.create_schedule(SCHEDULE_ID, wanted)
-        return "created"
+        try:
+            await client.create_schedule(SCHEDULE_ID, wanted)
+            return "created"
+        except ScheduleAlreadyRunningError:
+            desc = await _describe_new(handle)
     current = _schedule_shape(desc.schedule)
     target = _schedule_shape(wanted)
     if current == target:
