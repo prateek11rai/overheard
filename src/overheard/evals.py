@@ -32,6 +32,17 @@ CONTEXTS = {
         "Reminds you when each houseplant needs water, light or a new pot.",
         [],
     ),
+    "supabase": (
+        "Supabase",
+        "Open-source Postgres backend: database, auth, storage and edge functions in one place.",
+        ["Firebase"],
+    ),
+    "obsidian": (
+        "Obsidian",
+        "Markdown note-taking app that keeps notes as local files, with links, graph view and "
+        "plugins.",
+        ["Notion", "Logseq"],
+    ),
 }
 
 
@@ -71,10 +82,10 @@ class ModelResult:
 
 
 def context_product(key: str) -> Product:
-    """A product built from one of the sample contexts.
+    """A product built from one of the eval contexts.
 
     Args:
-        key: mealwise, shipnote or plantpal.
+        key: A sample (mealwise, shipnote, plantpal) or a real product (supabase, obsidian).
 
     Returns:
         A product (not saved anywhere).
@@ -132,19 +143,24 @@ def load_items(folder: Path = EVAL_DIR) -> tuple[list[Item], str]:
     return items, source
 
 
-async def fetch_hn_item(client: httpx.AsyncClient, item: Item) -> Item:
-    """Fill a Hacker News item's title and text from its id.
+async def fetch_hn_item(client: httpx.AsyncClient, item: Item) -> Item | None:
+    """Fill a Hacker News item's title and text from its id (at most one request a second).
 
     Args:
         client: HTTP client.
         item: An item with `hn_id`.
 
     Returns:
-        The item with title, text and community filled in.
+        The item with title, text and community filled in, or None if it's gone or empty.
     """
+    await sources.HN_GATE.turn()
     r = await client.get(f"{HN_ITEM_API}{item.hn_id}", timeout=20)
+    if r.status_code == 404:
+        return None
     r.raise_for_status()
     d = r.json()
+    if not d.get("text") and not d.get("title"):
+        return None
     hit = {
         "objectID": str(d.get("id")),
         "title": d.get("title"),
@@ -316,9 +332,15 @@ async def main(
         items = items[:limit]
     hn = [i for i in items if i.hn_id]
     if hn:
+        print(f"Fetching {len(hn)} Hacker News items by id…", flush=True)
+        gone = set()
         async with httpx.AsyncClient() as client:
             for item in hn:
-                await fetch_hn_item(client, item)
+                if await fetch_hn_item(client, item) is None:
+                    gone.add(item.id)
+        if gone:
+            print(f"  {len(gone)} deleted or empty, left out")
+            items = [i for i in items if i.id not in gone]
     key = settings.llm_api_key.get_secret_value() if settings.llm_api_key else None
     roles = role_models(None, settings.chat_model, settings.embed_model)
     results = []

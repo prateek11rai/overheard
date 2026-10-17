@@ -16,6 +16,12 @@ from overheard.web.context import WebCore
 from overheard.web.security import parse_emails
 
 
+def _labels_note(row: dict | None) -> str:
+    if not row:
+        return ""
+    return f"Labels {row['labels_source']} · {row['items']} posts"
+
+
 class Views(WebCore):
     """The data each page renders from."""
 
@@ -300,6 +306,7 @@ class Views(WebCore):
             "chat_in_use": chat_in_use,
             "embed_in_use": embed_in_use,
             "compare_rows": compare_rows,
+            "labels_note": _labels_note(evals.get(chat_in_use) or next(iter(evals.values()), None)),
             "compare_next": others[0] if others else None,
             "is_ollama": found.server == "ollama",
         }

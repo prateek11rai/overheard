@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 import httpx
 
@@ -22,11 +23,28 @@ def test_load_items_prefers_checked_labels(tmp_path):
     assert items[0].hn_id == 1 and not items[0].synthetic
 
 
-def test_the_shipped_set_is_thirty_synthetic_items():
+def test_the_shipped_set_is_synthetic_posts_and_hacker_news_ids():
     items, source = load_items()
-    assert len(items) == 30 and all(i.synthetic for i in items)
-    assert {i.product for i in items} == {"mealwise", "shipnote", "plantpal"}
+    synthetic = [i for i in items if i.synthetic]
+    hn = [i for i in items if i.hn_id]
+    assert len(synthetic) == 30 and len(hn) == 60 and len(items) == 90
+    assert source == "proposed, not yet checked by a person"
+    assert {i.product for i in synthetic} == {"mealwise", "shipnote", "plantpal"}
+    assert {i.product for i in hn} == {"supabase", "obsidian"}
     assert {i.label for i in items} == {"ask", "pain", "you", "rival", "noise"}
+    assert len({i.hn_id for i in hn}) == 60
+    for item in items:
+        product = evals.context_product(item.product)
+        if item.label == "rival":
+            assert item.competitor in product.competitors
+
+
+def test_no_hacker_news_text_is_stored():
+    text = Path("data/eval/labels.proposed.jsonl").read_text(encoding="utf-8")
+    rows = [json.loads(line) for line in text.splitlines() if line.strip()]
+    for row in rows:
+        if row.get("hn_id"):
+            assert set(row) <= {"id", "product", "source", "hn_id", "label", "competitor"}
 
 
 async def test_run_model_scores_labels_and_recall():
@@ -86,6 +104,25 @@ async def test_hacker_news_items_are_fetched_by_id():
     assert item.title == "Ask HN: How do you plan weekly meals?"
     assert item.text.startswith("Every inventory app wants me to scan every can.")
     assert item.community == "Hacker News"
+
+
+async def test_hacker_news_fetches_wait_for_their_turn_and_skip_deleted_items(monkeypatch):
+    turns = []
+
+    async def turn():
+        turns.append(1)
+
+    monkeypatch.setattr(evals.sources.HN_GATE, "turn", turn)
+
+    def handler(request):
+        if request.url.path.endswith("/1"):
+            return httpx.Response(200, json={"id": 1, "type": "comment", "text": None})
+        return httpx.Response(404, json={"status": 404})
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        assert await evals.fetch_hn_item(client, Item("a", "supabase", "you", hn_id=1)) is None
+        assert await evals.fetch_hn_item(client, Item("b", "supabase", "you", hn_id=2)) is None
+    assert len(turns) == 2
 
 
 async def test_fetched_hacker_news_comment_is_marked_as_a_comment():

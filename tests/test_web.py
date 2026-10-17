@@ -711,3 +711,24 @@ def test_the_first_check_badge_follows_the_phrases(tmp_path):
         assert "first check now · Hacker News only" in hn.text
         edit = c.post("/api/chips/phrases", data=data, headers=ask("/products/1/edit"))
         assert 'id="first-cost"' not in edit.text
+
+
+def test_compare_models_says_the_labels_are_proposed(client):
+    async def save():
+        async with Database(TEST_DSN, SCHEMA) as db:
+            await db.save_eval(
+                kind="checked",
+                model="gemma4:e4b",
+                items=90,
+                right_label=80,
+                quote_ok=88,
+                ask_total=8,
+                ask_found=8,
+                seconds_per_post=2.0,
+                labels_source="proposed, not yet checked by a person",
+                details={},
+            )
+
+    asyncio.run(save())
+    page = client.get("/settings").text
+    assert "Labels proposed, not yet checked by a person · 90 posts" in page
