@@ -7,8 +7,8 @@ from datetime import date
 
 import pytest
 from temporalio import activity, workflow
-from temporalio.common import RetryPolicy
 from temporalio.client import WorkflowFailureError
+from temporalio.common import RetryPolicy
 from temporalio.exceptions import ApplicationError
 from temporalio.testing import WorkflowEnvironment
 from temporalio.worker import Worker

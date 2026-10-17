@@ -157,7 +157,7 @@ async def sync_schedule(client: Any, time_of_day: str, tz: str, paused: bool) ->
     return "updated"
 
 
-async def ensure_schedule(client: Any, db: Database) -> str:
+async def ensure_schedule(client: Any, db: Database, default_tz: str | None = None) -> str:
     """Make the schedule match the time, timezone and pause switch stored in the app.
 
     Safe to call on every start: an unchanged schedule is left alone.
@@ -165,27 +165,29 @@ async def ensure_schedule(client: Any, db: Database) -> str:
     Args:
         client: Temporal client.
         db: Database.
+        default_tz: Timezone when none is stored yet.
 
     Returns:
         "created", "updated" or "unchanged".
     """
-    t, tz, paused = await schedule_settings(db)
+    t, tz, paused = await schedule_settings(db, default_tz)
     if await db.get_setting("timezone") is None:
         await db.set_setting("timezone", tz)
     return await sync_schedule(client, t, tz, paused)
 
 
-async def schedule_settings(db: Database) -> tuple[str, str, bool]:
+async def schedule_settings(db: Database, default_tz: str | None = None) -> tuple[str, str, bool]:
     """The morning time, timezone and pause switch stored in the app.
 
     Args:
         db: Database.
+        default_tz: Timezone when none is stored (`OVERHEARD_TIMEZONE` or the computer's).
 
     Returns:
         (time, timezone, paused).
     """
     t = await db.get_setting("morning_time") or DEFAULT_TIME
-    tz = await db.get_setting("timezone") or local_timezone()
+    tz = await db.get_setting("timezone") or default_tz or local_timezone()
     paused = bool(await db.get_setting("paused_all", False))
     return t, tz, paused
 
@@ -198,7 +200,7 @@ async def sync_schedule_from_db(settings: Settings) -> None:
     """
     client = await connect(settings)
     async with Database(settings.dsn, settings.overheard_db_schema, max_size=2) as db:
-        await ensure_schedule(client, db)
+        await ensure_schedule(client, db, settings.default_timezone())
 
 
 async def temporal_status(settings: Settings) -> dict[str, Any]:
@@ -393,7 +395,8 @@ async def run_worker(settings: Settings) -> None:
 
     async with Database(settings.dsn, settings.overheard_db_schema) as db:
         client = await connect(settings)
-        print(f"schedule {SCHEDULE_ID}: {await ensure_schedule(client, db)}", flush=True)
+        result = await ensure_schedule(client, db, settings.default_timezone())
+        print(f"schedule {SCHEDULE_ID}: {result}", flush=True)
         acts = Activities(settings, db)
         worker = Worker(
             client,

@@ -53,6 +53,7 @@ class Settings(BaseSettings):
     overheard_data_dir: Path = Path(".data")
     overheard_offline: bool = False
     overheard_temporal_bin: Path | None = None
+    overheard_timezone: str | None = None
 
     @field_validator("overheard_password", mode="before")
     @classmethod
@@ -66,6 +67,24 @@ class Settings(BaseSettings):
         if len(raw) < MIN_PASSWORD:
             raise ValueError(f"OVERHEARD_PASSWORD must be at least {MIN_PASSWORD} characters")
         return raw
+
+    @field_validator("overheard_timezone", mode="before")
+    @classmethod
+    def _timezone(cls, value: object) -> object:
+        if value is None or not str(value).strip():
+            return None
+        name = str(value).strip()
+        if not is_timezone(name):
+            raise ValueError(f"OVERHEARD_TIMEZONE is not a timezone: {name}")
+        return name
+
+    def default_timezone(self) -> str:
+        """The first morning timezone: `OVERHEARD_TIMEZONE`, else the computer's.
+
+        Returns:
+            An IANA timezone name.
+        """
+        return self.overheard_timezone or local_timezone()
 
     @model_validator(mode="after")
     def _derive_defaults(self) -> "Settings":
@@ -212,3 +231,53 @@ def temporal_binary(override: str | Path | None = None) -> Path:
         "Temporal CLI not found. Install it with `brew install temporal` "
         "(or set OVERHEARD_TEMPORAL_BIN)."
     )
+
+
+COMMON_TIMEZONES = (
+    "UTC",
+    "Europe/London",
+    "Europe/Berlin",
+    "America/New_York",
+    "America/Chicago",
+    "America/Denver",
+    "America/Los_Angeles",
+    "America/Sao_Paulo",
+    "Asia/Kolkata",
+    "Asia/Singapore",
+    "Asia/Tokyo",
+    "Australia/Sydney",
+)
+
+
+def is_timezone(name: str) -> bool:
+    """Whether a name is a known IANA timezone.
+
+    Args:
+        name: The name.
+
+    Returns:
+        True for names zoneinfo can load.
+    """
+    from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+
+    if not name or "/" not in name and name != "UTC":
+        return False
+    try:
+        ZoneInfo(name)
+    except (ZoneInfoNotFoundError, ValueError):
+        return False
+    return True
+
+
+def timezone_choices(first: str, current: str | None = None) -> list[str]:
+    """The timezones offered in the app: the computer's first, then common ones.
+
+    Args:
+        first: The computer's (or `OVERHEARD_TIMEZONE`'s) zone.
+        current: The zone in use now, kept in the list if it isn't a common one.
+
+    Returns:
+        Unique names in display order.
+    """
+    names = [first, *([current] if current else []), *COMMON_TIMEZONES]
+    return list(dict.fromkeys(n for n in names if n))

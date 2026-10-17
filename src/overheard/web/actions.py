@@ -12,6 +12,7 @@ from overheard.ai import (
     ModelUnavailableError,
     role_models,
 )
+from overheard.settings import is_timezone
 from overheard.web.context import Web
 from overheard.web.security import parse_emails, slugify
 
@@ -133,6 +134,15 @@ def register(app: FastAPI, web: Web) -> None:
         value = f"{h:02d}:{m:02d}"
         await web._db().set_setting("morning_time", value)
         return await web._schedule_changed(request, f"Every morning at {value}")
+
+    @app.post("/api/schedule/timezone", response_class=HTMLResponse)
+    async def schedule_timezone(request: Request, tz: str = Form(...)) -> Response:
+        tz = tz.strip()
+        if not is_timezone(tz):
+            return web._toast_only("That isn't a timezone")
+        await web._db().set_setting("timezone", tz)
+        morning = await web._db().get_setting("morning_time") or workflows.DEFAULT_TIME
+        return await web._schedule_changed(request, f"Every morning at {morning} {tz}")
 
     @app.post("/api/schedule/step", response_class=HTMLResponse)
     async def schedule_step(request: Request, minutes: int = Form(...)) -> Response:

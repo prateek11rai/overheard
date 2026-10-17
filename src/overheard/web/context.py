@@ -21,7 +21,7 @@ from overheard.ai import (
     role_models,
 )
 from overheard.db import Database, Product
-from overheard.settings import Settings, local_timezone
+from overheard.settings import Settings, timezone_choices
 from overheard.sources import SerpApiAccount
 from overheard.web.security import parse_emails
 
@@ -101,7 +101,7 @@ class Web:
     async def _tz(self) -> str:
         value = await self._db().get_setting("timezone")
         if not value:
-            value = local_timezone()
+            value = self.settings.default_timezone()
             await self._db().set_setting("timezone", value)
         return value
 
@@ -187,6 +187,8 @@ class Web:
             "title_count": count,
             "temporal_ui": self.settings.temporal_ui_url,
             "busy": busy,
+            "tz_name": zone.key,
+            "tz_choices": timezone_choices(self.settings.default_timezone(), zone.key),
         }
 
     def _page(
@@ -608,7 +610,9 @@ class Web:
         return self._fragment(request, None, ctx, toast=message, oob=oob)
 
     async def _schedule_changed(self, request: Request, message: str) -> Response:
-        t, zone, paused = await workflows.schedule_settings(self._db())
+        t, zone, paused = await workflows.schedule_settings(
+            self._db(), self.settings.default_timezone()
+        )
         try:
             await workflows.sync_schedule(await self._temporal(), t, zone, paused)
         except Exception:

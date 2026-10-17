@@ -24,6 +24,10 @@
         <form style="margin-top:14px" hx-post="/api/schedule/time" hx-trigger="change" hx-swap="none">
           <div class="opts">{% for p in presets %}<label class="opt mono"><input type="radio" name="time" value="{{ p }}"{% if p == morning_time %} checked{% endif %}>{{ p }}</label>{% endfor %}</div>
         </form>
+        <div class="small dim" style="margin-top:16px">Timezone</div>
+        <form class="tzlist" hx-post="/api/schedule/timezone" hx-trigger="change" hx-swap="none">
+          <div class="opts">{% for z in tz_choices %}<label class="opt mono sm"><input type="radio" name="tz" value="{{ z }}"{% if z == tz_name %} checked{% endif %}>{{ z }}</label>{% endfor %}</div>
+        </form>
         <div class="row between small" style="margin-top:18px"><span class="dim">{% if last_run %}Last run · {{ last_run[0] }} · <span class="{{ 'ok' if last_run[1] in ('done', 'hn_only') else 'bad' if last_run[1] == 'failed' else 'dim' }}">{{ {'done': 'done', 'hn_only': 'done', 'failed': 'failed', 'running': 'running'}[last_run[1]] }}</span>{% else %}No runs yet{% endif %}</span><a class="link" href="/runs">Run log →</a></div>
         <div class="row" style="margin-top:16px"><button class="btn primary" type="button" hx-post="/api/runs/now" hx-swap="none"{% if busy %} disabled title="Already running"{% endif %}>{{ 'Running…' if busy else 'Run now' }}</button><span class="badge">{{ run_cost }} search{{ '' if run_cost == 1 else 'es' }}</span></div>
         <div class="row between" style="margin-top:18px;padding-top:16px;border-top:2px solid var(--s0)"><span>Pause all listening</span><button class="switch{% if paused_all %} on{% endif %}" type="button" role="switch" aria-checked="{{ 'true' if paused_all else 'false' }}" aria-label="Pause all listening" hx-post="/api/schedule/pause-all" hx-swap="none"></button></div>

@@ -16,7 +16,7 @@ with workflow.unsafe.imports_passed_through():
     from overheard.ai import AI, ModelUnavailableError, role_models
     from overheard.db import Database
     from overheard.pipeline import PlanInput
-    from overheard.settings import Settings, local_timezone
+    from overheard.settings import Settings
 
 from overheard.workflows.types import (
     PLAN_EXHAUSTED,
@@ -99,7 +99,7 @@ class Activities:
         ]
 
     async def _today(self) -> date:
-        tz = await self.db.get_setting("timezone") or local_timezone()
+        tz = await self.db.get_setting("timezone") or self.settings.default_timezone()
         return datetime.now(ZoneInfo(tz)).date()
 
     async def _ai(self) -> AI:
@@ -484,7 +484,7 @@ class Activities:
         product = await self.db.product(args.product_id)
         if product is None:
             return "product gone"
-        tz = await self.db.get_setting("timezone") or local_timezone()
+        tz = await self.db.get_setting("timezone") or self.settings.default_timezone()
         run = await self.db.run(args.run_id) if args.run_id else None
         since = run.started_at if run is not None else None
         brief = await pipeline.brief_for(self.db, product, tz, since=since)

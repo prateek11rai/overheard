@@ -114,7 +114,7 @@ async def _setup(settings: Settings) -> int:
     try:
         client = await asyncio.wait_for(workflows.connect(settings), timeout=5)
         async with Database(settings.dsn, settings.overheard_db_schema, max_size=2) as db:
-            result = await workflows.ensure_schedule(client, db)
+            result = await workflows.ensure_schedule(client, db, settings.default_timezone())
         _line(OK, "schedule", f"{workflows.SCHEDULE_ID} {result}")
     except Exception:
         _line(LATER, "schedule", "Temporal isn't running; the worker creates it when it starts")

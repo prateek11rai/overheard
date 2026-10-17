@@ -23,7 +23,7 @@ from overheard.demo.samples import (
     all_demo_posts,
 )
 from overheard.demo.types import DemoPost, DemoTheme
-from overheard.settings import Settings, local_timezone
+from overheard.settings import Settings
 
 DEMO_PREFIX = "demo-"
 REDDIT = "https://www.reddit.com/r/{sub}/comments/demo{n}/{slug}/"
@@ -169,7 +169,7 @@ async def load(db: Database, settings: Settings) -> dict[str, Product]:
     """
     _check_quotes()
     await db.delete_demo()
-    zone = ZoneInfo(await db.get_setting("timezone") or local_timezone())
+    zone = ZoneInfo(await db.get_setting("timezone") or settings.default_timezone())
     hhmm = await db.get_setting("morning_time") or "07:00"
     base = _last_morning(datetime.now(UTC), zone, hhmm)
     loader = _Loader(db, base)

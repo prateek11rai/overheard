@@ -203,3 +203,5 @@ form:has(input[name=subs_mode][value=only]:checked) .subs-only{display:block}
 .btn:disabled,.mi:disabled{opacity:.5;cursor:not-allowed;transform:none}
 .btn:disabled:hover{transform:none;box-shadow:3px 3px 0 var(--crust)}
 .btn.primary:disabled:hover{box-shadow:4px 4px 0 var(--sh-mauve)}
+.tzlist{max-height:140px;overflow:auto;margin-top:8px;padding:2px 6px 8px 2px}
+.opt.sm{font-size:12.5px;padding:4px 9px}

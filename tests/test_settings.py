@@ -127,3 +127,17 @@ def test_long_password_is_kept(clean_env, monkeypatch):
     assert (
         Settings(_env_file=None).overheard_password.get_secret_value() == "a-long-enough-password"
     )
+
+
+def test_timezone_setting_is_validated_and_used_first(clean_env, monkeypatch):
+    from overheard.settings import timezone_choices
+
+    monkeypatch.setenv("OVERHEARD_TIMEZONE", "Asia/Tokyo")
+    s = Settings(_env_file=None)
+    assert s.default_timezone() == "Asia/Tokyo"
+    choices = timezone_choices("Asia/Tokyo", current="Europe/Paris")
+    assert choices[0] == "Asia/Tokyo" and "Europe/Paris" in choices and "UTC" in choices
+    assert len(choices) == len(set(choices))
+    monkeypatch.setenv("OVERHEARD_TIMEZONE", "Mars/Olympus")
+    with pytest.raises(ValueError, match="timezone"):
+        Settings(_env_file=None)

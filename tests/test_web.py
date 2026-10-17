@@ -414,3 +414,27 @@ def test_switching_embeddings_waits_for_the_reembed(client, monkeypatch):
     page = client.get("/settings").text
     assert 'name="embed" value="embeddinggemma:300m" checked' in page
     assert "re-embedding…" in page
+
+
+def test_the_timezone_can_be_changed_and_updates_the_schedule(client, monkeypatch):
+    synced = []
+
+    async def sync(_client, time_of_day, tz, paused):
+        synced.append((time_of_day, tz, paused))
+        return "updated"
+
+    async def connect(_settings):
+        return FakeTemporal()
+
+    monkeypatch.setattr("overheard.workflows.connect", connect)
+    monkeypatch.setattr("overheard.workflows.sync_schedule", sync)
+    page = client.get("/settings").text
+    assert 'name="tz" value="UTC"' in page and "<select" not in page
+    r = client.post("/api/schedule/timezone", data={"tz": "Asia/Tokyo"}, headers=ask("/settings"))
+    assert "Asia/Tokyo" in trig(r)
+    assert synced[-1][1] == "Asia/Tokyo"
+    page = client.get("/settings").text
+    assert 'name="tz" value="Asia/Tokyo" checked' in page
+    assert "Asia/Tokyo" in page.split('id="timepick"')[1][:400]
+    r = client.post("/api/schedule/timezone", data={"tz": "Mars/Olympus"}, headers=ask("/settings"))
+    assert "isn't a timezone" in trig(r)
