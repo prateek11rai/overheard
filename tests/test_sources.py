@@ -141,9 +141,22 @@ async def test_search_hn_asks_for_items_newer_than_since():
     assert len(posts) == 2
     params = seen[0].url.params
     assert seen[0].url.host == "hn.algolia.com"
-    assert params["query"] == '"pantry recipes"'
+    assert params["query"] == "pantry recipes"
+    assert "advancedSyntax" not in params
     assert params["numericFilters"] == f"created_at_i>{int(since.timestamp())}"
     assert params["tags"] == "(story,comment)"
+
+
+async def test_search_hn_matches_all_words_not_the_exact_phrase():
+    seen = []
+
+    def handler(request):
+        seen.append(request)
+        return httpx.Response(200, json={"hits": []})
+
+    async with _client(handler) as client:
+        await sources.search_hn(client, 'say "hi" there', NOW)
+    assert seen[0].url.params["query"] == "say hi there"
 
 
 def test_comment_flag_survives_the_ledger_round_trip():

@@ -324,9 +324,12 @@ def parse_hn(payload: dict[str, Any]) -> list[Post]:
 async def search_hn(client: httpx.AsyncClient, phrase: str, since: datetime) -> list[Post]:
     """Search Hacker News stories and comments newer than `since` (free).
 
+    Every word of the phrase must appear, in any order: comments rarely repeat a phrase word
+    for word, and the labeller drops what's off-topic.
+
     Args:
         client: HTTP client.
-        phrase: The phrase to look for (exact phrase).
+        phrase: The phrase to look for.
         since: Only items created after this time.
 
     Returns:
@@ -336,8 +339,7 @@ async def search_hn(client: httpx.AsyncClient, phrase: str, since: datetime) -> 
         SourceError: If the API fails.
     """
     params = {
-        "query": f'"{phrase.replace(chr(34), " ").strip()}"',
-        "advancedSyntax": "true",
+        "query": " ".join(phrase.replace(chr(34), " ").split()),
         "tags": "(story,comment)",
         "numericFilters": f"created_at_i>{int(since.timestamp())}",
         "hitsPerPage": "50",
