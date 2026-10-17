@@ -90,3 +90,24 @@ async def test_the_email_covers_only_posts_found_in_this_run(db, test_settings):
     assert nothing_new.total == 0
     assert nothing_new.headline == "Nothing new about Mealwise since yesterday."
     assert await mail.deliver(test_settings, product, nothing_new) == "Quiet morning · no email"
+
+
+async def test_the_email_subline_names_the_current_run(db, test_settings):
+    from datetime import UTC, datetime
+
+    from tests.conftest import add_product
+
+    product = await add_product(db)
+    friday = datetime(2026, 10, 16, 7, 0, tzinfo=UTC)
+    saturday = datetime(2026, 10, 17, 7, 0, tzinfo=UTC)
+    old = await db.upsert_run("morning-fri", "morning")
+    await db.add_step(old, "plan", "planned", product_id=product.id)
+    await db.finish_run(old, "done")
+    await db._exec("UPDATE runs SET started_at = %s WHERE id = %s", (friday, old))
+    now_run = await db.upsert_run("morning-sat", "morning")
+    await db._exec("UPDATE runs SET started_at = %s WHERE id = %s", (saturday, now_run))
+    brief = await pipeline.brief_for(db, product, "UTC", since=saturday)
+    assert brief.subline.startswith("Saturday morning")
+    assert brief.status.endswith("at 07:00")
+    page_brief = await pipeline.brief_for(db, product, "UTC")
+    assert page_brief.subline.startswith("Friday morning")

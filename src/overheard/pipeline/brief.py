@@ -230,8 +230,8 @@ async def brief_for(
         product: The product.
         tz: Timezone for the times shown.
         now: Now (for tests).
-        since: Only posts found at or after this time (the morning email uses the run's
-            start, so it shows what is new rather than everything still open).
+        since: The current run's start: only posts found since then are shown, and the
+            subline and status name this run (the morning email passes it).
 
     Returns:
         The brief.
@@ -275,7 +275,7 @@ async def brief_for(
         for c in mentions
     ]
     hidden = len(await db.hidden_posts(product.id))
-    last = await db.last_product_run(product.id)
+    last = {"started_at": since} if since is not None else await db.last_product_run(product.id)
     if last:
         local = last["started_at"].astimezone(zone)
         n = await db.new_since(product.id, 24)
