@@ -121,7 +121,7 @@ The web app listens on 127.0.0.1 by default and refuses any other address unless
 
 ## Built for Hacktoberfest 2026
 
-<!-- TODO(planner): link to the DEV post. -->
+**Read the post:** [GummySearch deletes everyone's data on December 1. I rebuilt its morning loop on a 4B model on my laptop](https://dev.to/prateek11rai/gummysearch-deletes-everyones-data-on-december-1-i-rebuilt-its-morning-loop-on-a-4b-model-on-my-71i) on DEV, with the agent session that built it.
 
 Built for the [Hacktoberfest Open-Source AI Challenge, Week 2: Side Hustle](https://dev.to/challenges/hacktoberfest-week2-2026-10-12). Categories entered: Gemma, Temporal, SerpApi, Tiger Data. Overheard runs on any Postgres with pgvector and uses TimescaleDB's `time_bucket` when present. The live run used Tiger Cloud (Postgres 18.6, TimescaleDB 2.30.2, pgvector 0.8.7), and `overheard doctor` checks that `time_bucket` answers.
 
