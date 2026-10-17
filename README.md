@@ -6,6 +6,12 @@ Every morning, what people said about the problem your product solves.
 
 Overheard reads Reddit (through Google, via SerpApi) and Hacker News for the phrases that describe each of your products, labels what it finds with an open-weight model on your own laptop, and sends you one short email per product: who asked for a tool like yours, which pains keep coming up, and who mentioned you or a competitor. Every label comes with a sentence quoted from the post, and the app checks that the quote is really there.
 
+## Demo
+
+
+https://github.com/user-attachments/assets/763bec2c-a63b-4105-939f-0f79bcc41284
+
+
 ## Why
 
 People pay for this today:
