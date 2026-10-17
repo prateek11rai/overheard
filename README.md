@@ -18,17 +18,7 @@ Overheard is that app: open source, on your laptop, with any open-weight model. 
 
 ## How it works
 
-```
-you ── http://127.0.0.1:8000 ──┐
-                               ▼
-   one Python project (uv): web (FastAPI + HTMX) and worker (Temporal)
-        │                         │                      │
-  Postgres + pgvector        Temporal server        outside world
-  posts, labels, themes      schedule + history     SerpApi (Reddit via Google)
-                                                     Hacker News API
-                                                     Ollama (your model)
-                                                     SMTP (your mailbox)
-```
+![Architecture: the browser, web, worker, Temporal and Ollama on your laptop; Postgres (Tiger), SerpApi, Hacker News and SMTP online](docs/img/diagrams/architecture.png)
 
 At the morning time (07:00 by default), one Temporal workflow runs each active product:
 
@@ -40,6 +30,10 @@ At the morning time (07:00 by default), one Temporal workflow runs each active p
 6. **Email** one digest per product from your own mailbox.
 
 A morning missed because the laptop was asleep runs when it wakes (12-hour catch-up). A search that fails is retried, and a retry never spends a second search.
+
+![One morning as a UML sequence diagram: Temporal starts MorningBrief, which runs a ProductScan per product: searches through the ledger, labels with verify_quote, themes with pgvector, then the email](docs/img/diagrams/morning-run.png)
+
+More diagrams (a click through HTMX, the label check, the data model) are in [docs/img/diagrams/](docs/img/diagrams/); their sources are HTML pages in [docs/design/diagrams/](docs/design/diagrams/).
 
 ## Quick start
 

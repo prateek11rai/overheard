@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>One click · overheard</title>
+<link rel="stylesheet" href="diagram.css">
+</head>
+<body>
+<main class="d" id="diagram" style="width:1192px">
+<h1>One click</h1>
+<p class="sub">UML sequence diagram · Done on a card</p>
+<svg width="1100" height="650" viewBox="0 0 1100 650" role="img">
+  <defs><marker id="open" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="12" markerHeight="12" orient="auto-start-reverse"><path d="M1 1 L11 6 L1 11" fill="none" stroke="#a6adc8" stroke-width="2"/></marker><marker id="fill" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="11" markerHeight="11" orient="auto-start-reverse"><path d="M1 1 L11 6 L1 11 Z" fill="#a6adc8"/></marker></defs>
+  <rect class="shadow " x="11.0" y="6" width="150" height="74"/>
+  <rect class="box" x="5.0" y="0" width="150" height="74"/>
+  <text class="t" x="80.0" y="32" text-anchor="middle">You</text>
+  <text class="s" x="80.0" y="62" text-anchor="middle">the browser</text>
+  <rect class="shadow " x="196.0" y="6" width="150" height="74"/>
+  <rect class="box" x="190.0" y="0" width="150" height="74"/>
+  <text class="t" x="265.0" y="44" text-anchor="middle">HTMX</text>
+  <rect class="shadow " x="386.0" y="6" width="150" height="74"/>
+  <rect class="box" x="380.0" y="0" width="150" height="74"/>
+  <text class="t" x="455.0" y="44" text-anchor="middle">FastAPI</text>
+  <rect class="shadow " x="576.0" y="6" width="150" height="74"/>
+  <rect class="box" x="570.0" y="0" width="150" height="74"/>
+  <text class="t" x="645.0" y="44" text-anchor="middle">Postgres</text>
+  <rect class="shadow " x="756.0" y="6" width="150" height="74"/>
+  <rect class="box" x="750.0" y="0" width="150" height="74"/>
+  <text class="t" x="825.0" y="44" text-anchor="middle">Jinja2</text>
+  <rect class="shadow " x="931.0" y="6" width="150" height="74"/>
+  <rect class="box" x="925.0" y="0" width="150" height="74"/>
+  <text class="t" x="1000.0" y="44" text-anchor="middle">app.js</text>
+  <line class="life" x1="80" y1="80" x2="80" y2="630"/>
+  <line class="life" x1="265" y1="80" x2="265" y2="630"/>
+  <line class="life" x1="455" y1="80" x2="455" y2="630"/>
+  <line class="life" x1="645" y1="80" x2="645" y2="630"/>
+  <line class="life" x1="825" y1="80" x2="825" y2="630"/>
+  <line class="life" x1="1000" y1="80" x2="1000" y2="630"/>
+  <rect class="act" x="257" y="128" width="16" height="392"/>
+  <rect class="act" x="447" y="176" width="16" height="224"/>
+  <line class="line" x1="88" y1="130" x2="255" y2="130" marker-end="url(#fill)"/>
+  <rect class="lab-bg" x="122" y="104" width="102" height="23"/>
+  <text class="lab" x="172" y="120" text-anchor="middle">click Done</text>
+  <line class="line" x1="273" y1="178" x2="445" y2="178" marker-end="url(#fill)"/>
+  <rect class="lab-bg" x="281" y="152" width="219" height="23"/>
+  <text class="lab" x="390" y="168" text-anchor="middle">POST /api/posts/42/done</text>
+  <line class="line" x1="463" y1="226" x2="635" y2="226" marker-end="url(#fill)"/>
+  <rect class="lab-bg" x="486" y="200" width="129" height="23"/>
+  <text class="lab" x="550" y="216" text-anchor="middle">status = done</text>
+  <line class="line" x1="463" y1="272" x2="635" y2="272" marker-end="url(#fill)"/>
+  <rect class="lab-bg" x="481" y="246" width="138" height="23"/>
+  <text class="lab" x="550" y="262" text-anchor="middle">brief + counts</text>
+  <line class="line" x1="463" y1="318" x2="815" y2="318" marker-end="url(#fill)"/>
+  <rect class="lab-bg" x="553" y="292" width="174" height="23"/>
+  <text class="lab" x="640" y="308" text-anchor="middle">render #main, #bar</text>
+  <line class="line dash" x1="817" y1="360" x2="465" y2="360" marker-end="url(#open)"/>
+  <rect class="lab-bg" x="616" y="334" width="48" height="23"/>
+  <text class="lab" x="640" y="350" text-anchor="middle">HTML</text>
+  <line class="line dash" x1="447" y1="408" x2="275" y2="408" marker-end="url(#open)"/>
+  <rect class="lab-bg" x="286" y="382" width="147" height="23"/>
+  <text class="lab" x="360" y="398" text-anchor="middle">HTML · oob #bar</text>
+  <rect class="lab-bg" x="278" y="416" width="165" height="23"/>
+  <text class="lab" x="360" y="432" text-anchor="middle">HX-Trigger: toast</text>
+  <path class="line" d="M273 458 H317 V488 H275" marker-end="url(#fill)"/>
+  <rect class="lab-bg" x="321" y="462" width="156" height="23"/>
+  <text class="lab" x="327" y="478" text-anchor="start">swap #main, #bar</text>
+  <line class="line" x1="273" y1="540" x2="990" y2="540" marker-end="url(#fill)"/>
+  <rect class="lab-bg" x="577" y="514" width="111" height="23"/>
+  <text class="lab" x="632" y="530" text-anchor="middle">toast event</text>
+  <line class="line" x1="992" y1="590" x2="90" y2="590" marker-end="url(#fill)"/>
+  <rect class="lab-bg" x="444" y="564" width="192" height="23"/>
+  <text class="lab" x="540" y="580" text-anchor="middle">“Marked done · Undo”</text>
+</svg>
+<p class="foot">No page reload and no client-side state: the server sends the HTML for every part of the page that changed.</p>
+</main>
+</body>
+</html>

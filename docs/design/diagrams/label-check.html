@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Checking a label · overheard</title>
+<link rel="stylesheet" href="diagram.css">
+</head>
+<body>
+<main class="d" id="diagram" style="width:1092px">
+<h1>Checking a label</h1>
+<p class="sub">UML activity diagram · labelling one post</p>
+<svg width="1000" height="830" viewBox="0 0 1000 830" role="img">
+  <defs><marker id="open" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="12" markerHeight="12" orient="auto-start-reverse"><path d="M1 1 L11 6 L1 11" fill="none" stroke="#a6adc8" stroke-width="2"/></marker><marker id="fill" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="11" markerHeight="11" orient="auto-start-reverse"><path d="M1 1 L11 6 L1 11 Z" fill="#a6adc8"/></marker></defs>
+  <circle class="node" cx="330" cy="18" r="14"/>
+  <line class="line" x1="330" y1="32" x2="330" y2="66" marker-end="url(#fill)"/>
+  <rect class="shadow " x="116" y="76" width="440" height="96" rx="14"/>
+  <rect class="box" x="110" y="70" width="440" height="96" rx="14"/>
+  <text class="t" x="330.0" y="112" text-anchor="middle">The post goes to the model</text>
+  <text class="s" x="330.0" y="142" text-anchor="middle">as JSON data · no tools</text>
+  <line class="line" x1="330" y1="166" x2="330" y2="206" marker-end="url(#fill)"/>
+  <rect class="shadow " x="116" y="216" width="440" height="96" rx="14"/>
+  <rect class="box" x="110" y="210" width="440" height="96" rx="14"/>
+  <text class="t" x="330.0" y="252" text-anchor="middle">The model answers</text>
+  <text class="s" x="330.0" y="282" text-anchor="middle">a label + the exact sentence</text>
+  <line class="line" x1="330" y1="306" x2="330" y2="346" marker-end="url(#fill)"/>
+  <path class="diamond" d="M330 350 L450 420 L330 490 L210 420 Z"/>
+  <text class="t" x="330" y="416" text-anchor="middle">verify_quote()</text>
+  <text class="s" x="330" y="442" text-anchor="middle">checks out?</text>
+  <line class="line" x1="330" y1="490" x2="330" y2="576" marker-end="url(#fill)"/>
+  <text class="yes" x="342" y="536">yes</text>
+  <rect class="shadow green" x="116" y="586" width="440" height="96" rx="14"/>
+  <rect class="box" x="110" y="580" width="440" height="96" rx="14"/>
+  <text class="t" x="330.0" y="622" text-anchor="middle">Shown in the brief</text>
+  <text class="s" x="330.0" y="652" text-anchor="middle">✓ quote checked</text>
+  <line class="line" x1="330" y1="676" x2="330" y2="730" marker-end="url(#fill)"/>
+  <circle class="node" cx="330" cy="748" r="16" style="fill:none;stroke:var(--text);stroke-width:2"/>
+  <circle class="node" cx="330" cy="748" r="9"/>
+  <line class="line" x1="450" y1="420" x2="636" y2="420" marker-end="url(#fill)"/>
+  <text class="no" x="464" y="408">no</text>
+  <rect class="shadow " x="646" y="378" width="300" height="96" rx="14"/>
+  <rect class="box" x="640" y="372" width="300" height="96" rx="14"/>
+  <text class="t" x="790.0" y="414" text-anchor="middle">Ask once more</text>
+  <text class="s" x="790.0" y="444" text-anchor="middle">“copy one sentence”</text>
+  <line class="line" x1="790" y1="468" x2="790" y2="516" marker-end="url(#fill)"/>
+  <path class="diamond" d="M790 520 L900 585 L790 650 L680 585 Z"/>
+  <text class="t" x="790" y="592" text-anchor="middle">checks out?</text>
+  <path class="line" d="M680 585 H590 V628 H554" marker-end="url(#fill)"/>
+  <text class="yes" x="630" y="574">yes</text>
+  <line class="line" x1="790" y1="650" x2="790" y2="716" marker-end="url(#fill)"/>
+  <text class="no" x="802" y="690">no</text>
+  <rect class="shadow red" x="646" y="726" width="300" height="96" rx="14"/>
+  <rect class="box" x="640" y="720" width="300" height="96" rx="14"/>
+  <text class="t" x="790.0" y="762" text-anchor="middle">Unverified</text>
+  <text class="s" x="790.0" y="792" text-anchor="middle">hidden with off-topic</text>
+  <path class="box" d="M620 150 H940 L960 170 V262 H620 Z" style="fill:var(--s0)"/>
+  <text class="f" x="638" y="182">word for word, 3+ words;</text>
+  <text class="f" x="638" y="208">“you” names the product,</text>
+  <text class="f" x="638" y="234">“rival” a competitor</text>
+  <path class="line dash" d="M660 262 L394 386"/>
+</svg>
+<p class="foot">A post that tells the model which label to pick still has to quote itself.</p>
+</main>
+</body>
+</html>

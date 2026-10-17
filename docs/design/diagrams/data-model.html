@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Data model · overheard</title>
+<link rel="stylesheet" href="diagram.css">
+</head>
+<body>
+<main class="d" id="diagram" style="width:1292px">
+<h1>Data model</h1>
+<p class="sub">UML class diagram · the tables that matter</p>
+<svg width="1200" height="786" viewBox="0 0 1200 786" role="img">
+  <defs><marker id="open" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="12" markerHeight="12" orient="auto-start-reverse"><path d="M1 1 L11 6 L1 11" fill="none" stroke="#a6adc8" stroke-width="2"/></marker><marker id="fill" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="11" markerHeight="11" orient="auto-start-reverse"><path d="M1 1 L11 6 L1 11 Z" fill="#a6adc8"/></marker></defs>
+  <rect class="shadow blue" x="6" y="6" width="330" height="191"/>
+  <rect class="box" x="0" y="0" width="330" height="191"/>
+  <text class="t" x="18" y="32">search_ledger</text>
+  <line class="line" x1="0" y1="46" x2="330" y2="46" style="stroke:var(--s2)"/>
+  <text class="f" x="18" y="72"><tspan class="k">PK</tspan> id</text>
+  <text class="f" x="18" y="99"><tspan class="k">UK</tspan> idempotency_key</text>
+  <text class="f" x="18" y="126">  day · product · phrase</text>
+  <text class="f" x="18" y="153"><tspan class="k">FK</tspan> product_id (set null)</text>
+  <text class="f" x="18" y="180">source · results</text>
+  <rect class="shadow mauve" x="441" y="6" width="330" height="191"/>
+  <rect class="box" x="435" y="0" width="330" height="191"/>
+  <text class="t" x="453" y="32">products</text>
+  <line class="line" x1="435" y1="46" x2="765" y2="46" style="stroke:var(--s2)"/>
+  <text class="f" x="453" y="72"><tspan class="k">PK</tspan> id</text>
+  <text class="f" x="453" y="99"><tspan class="k">UK</tspan> slug</text>
+  <text class="f" x="453" y="126">name · description</text>
+  <text class="f" x="453" y="153">phrases · competitors</text>
+  <text class="f" x="453" y="180">recipients · status</text>
+  <rect class="shadow blue" x="876" y="6" width="330" height="164"/>
+  <rect class="box" x="870" y="0" width="330" height="164"/>
+  <text class="t" x="888" y="32">digest_ledger</text>
+  <line class="line" x1="870" y1="46" x2="1200" y2="46" style="stroke:var(--s2)"/>
+  <text class="f" x="888" y="72"><tspan class="k">PK</tspan> idempotency_key</text>
+  <text class="f" x="888" y="99">  run · product</text>
+  <text class="f" x="888" y="126"><tspan class="k">FK</tspan> product_id</text>
+  <text class="f" x="888" y="153">status: sending → sent</text>
+  <rect class="shadow " x="6" y="307" width="330" height="191"/>
+  <rect class="box" x="0" y="301" width="330" height="191"/>
+  <text class="t" x="18" y="333">runs</text>
+  <line class="line" x1="0" y1="347" x2="330" y2="347" style="stroke:var(--s2)"/>
+  <text class="f" x="18" y="373"><tspan class="k">PK</tspan> id</text>
+  <text class="f" x="18" y="400"><tspan class="k">UK</tspan> workflow_id</text>
+  <text class="f" x="18" y="427"><tspan class="k">FK</tspan> product_id (a check)</text>
+  <text class="f" x="18" y="454">kind · status</text>
+  <text class="f" x="18" y="481">searches_used</text>
+  <rect class="shadow mauve" x="441" y="307" width="330" height="191"/>
+  <rect class="box" x="435" y="301" width="330" height="191"/>
+  <text class="t" x="453" y="333">posts</text>
+  <line class="line" x1="435" y1="347" x2="765" y2="347" style="stroke:var(--s2)"/>
+  <text class="f" x="453" y="373"><tspan class="k">PK</tspan> id</text>
+  <text class="f" x="453" y="400"><tspan class="k">FK</tspan> product_id · run_id</text>
+  <text class="f" x="453" y="427"><tspan class="k">FK</tspan> theme_id</text>
+  <text class="f" x="453" y="454"><tspan class="k">UK</tspan> product_id + url</text>
+  <text class="f" x="453" y="481">label · quote · status</text>
+  <rect class="shadow green" x="876" y="307" width="330" height="164"/>
+  <rect class="box" x="870" y="301" width="330" height="164"/>
+  <text class="t" x="888" y="333">themes</text>
+  <line class="line" x1="870" y1="347" x2="1200" y2="347" style="stroke:var(--s2)"/>
+  <text class="f" x="888" y="373"><tspan class="k">PK</tspan> id</text>
+  <text class="f" x="888" y="400"><tspan class="k">FK</tspan> product_id</text>
+  <text class="f" x="888" y="427">name · first_seen</text>
+  <text class="f" x="888" y="454">centroid (vector)</text>
+  <rect class="shadow " x="6" y="608" width="330" height="164"/>
+  <rect class="box" x="0" y="602" width="330" height="164"/>
+  <text class="t" x="18" y="634">run_steps</text>
+  <line class="line" x1="0" y1="648" x2="330" y2="648" style="stroke:var(--s2)"/>
+  <text class="f" x="18" y="674"><tspan class="k">PK</tspan> id</text>
+  <text class="f" x="18" y="701"><tspan class="k">FK</tspan> run_id</text>
+  <text class="f" x="18" y="728"><tspan class="k">UK</tspan> run_id + step_key</text>
+  <text class="f" x="18" y="755">text · attempts</text>
+  <rect class="shadow green" x="441" y="608" width="330" height="137"/>
+  <rect class="box" x="435" y="602" width="330" height="137"/>
+  <text class="t" x="453" y="634">post_embeddings</text>
+  <line class="line" x1="435" y1="648" x2="765" y2="648" style="stroke:var(--s2)"/>
+  <text class="f" x="453" y="674"><tspan class="k">PK</tspan> post_id + model</text>
+  <text class="f" x="453" y="701">embedding (vector)</text>
+  <text class="f" x="453" y="728">HNSW index per model</text>
+  <rect class="shadow " x="876" y="608" width="330" height="137"/>
+  <rect class="box" x="870" y="602" width="330" height="137"/>
+  <text class="t" x="888" y="634">settings</text>
+  <line class="line" x1="870" y1="648" x2="1200" y2="648" style="stroke:var(--s2)"/>
+  <text class="f" x="888" y="674"><tspan class="k">PK</tspan> key</text>
+  <text class="f" x="888" y="701">value (jsonb)</text>
+  <text class="f" x="888" y="728">time · timezone · models</text>
+  <line class="line" x1="435" y1="92" x2="330" y2="92"/>
+  <text class="k" x="427" y="84" text-anchor="end">1</text>
+  <text class="k" x="338" y="84" text-anchor="start">*</text>
+  <line class="line" x1="765" y1="92" x2="870" y2="92"/>
+  <text class="k" x="773" y="84" text-anchor="start">1</text>
+  <text class="k" x="862" y="84" text-anchor="end">*</text>
+  <line class="line" x1="600" y1="191" x2="600" y2="301"/>
+  <text class="k" x="610" y="213" text-anchor="start">1</text>
+  <text class="k" x="610" y="293" text-anchor="start">*</text>
+  <text class="k" x="453" y="215" text-anchor="end">1</text>
+  <text class="k" x="304" y="293" text-anchor="start">*</text>
+  <line class="line" x1="465" y1="191" x2="290" y2="301"/>
+  <text class="k" x="747" y="215" text-anchor="start">1</text>
+  <text class="k" x="896" y="293" text-anchor="end">*</text>
+  <line class="line" x1="735" y1="191" x2="910" y2="301"/>
+  <line class="line" x1="330" y1="393" x2="435" y2="393"/>
+  <text class="k" x="338" y="385" text-anchor="start">1</text>
+  <text class="k" x="427" y="385" text-anchor="end">*</text>
+  <line class="line" x1="870" y1="393" x2="765" y2="393"/>
+  <text class="k" x="862" y="385" text-anchor="end">1</text>
+  <text class="k" x="773" y="385" text-anchor="start">*</text>
+  <line class="line" x1="165" y1="492" x2="165" y2="602"/>
+  <text class="k" x="175" y="514" text-anchor="start">1</text>
+  <text class="k" x="175" y="594" text-anchor="start">*</text>
+  <line class="line" x1="600" y1="492" x2="600" y2="602"/>
+  <text class="k" x="610" y="514" text-anchor="start">1</text>
+  <text class="k" x="610" y="594" text-anchor="start">*</text>
+</svg>
+<p class="foot">Also: search_uses (which run used which saved search) and eval_results (model comparisons). All in one schema.</p>
+</main>
+</body>
+</html>
