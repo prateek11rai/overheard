@@ -24,7 +24,7 @@ uv run pytest -q                 # uses the overheard_test database
 
 ## Layout
 
-- `src/overheard/`: `cli.py` (the `overheard` command), `settings.py`, `db.py` (every query), `migrations/`, `ai.py` (models by role), `sources.py` (SerpApi, Hacker News), `pipeline.py` (search plan, ledger, labels, themes, brief), `workflows.py` (Temporal), `mail.py`, `web.py`, `demo.py`, `evals.py`, `templates/`, `static/`
+- `src/overheard/`: `cli.py` (the `overheard` command), `settings.py`, `db/` (every query: models, core, products, posts, themes, runs), `migrations/`, `ai.py` (models by role), `sources.py` (SerpApi, Hacker News), `pipeline/` (quotes, search plan and ledger, labels, themes, brief), `workflows/` (Temporal workflows, activities, schedule and worker), `mail.py`, `web/` (security, shared helpers, pages, actions), `demo/`, `evals.py`, `templates/`, `static/`. A file that passes about 500 lines becomes a folder of the same name.
 - `tests/` with `tests/fixtures/` (recorded API replies, never live calls in tests)
 - `data/eval/` checked posts for comparing models
 - `.agents/skills/` is the one skills folder for every agent; `.claude/skills` is a symlink to it
