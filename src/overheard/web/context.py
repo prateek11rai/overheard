@@ -60,6 +60,19 @@ def oob_target_on(template: str, path: str) -> bool:
     return True if check is None else check(path)
 
 
+def bar_state(morning_running: bool, checking: list[int]) -> str:
+    """What the bar shows as running, so a poll can tell when that changes.
+
+    Args:
+        morning_running: Whether a morning run is going.
+        checking: Ids of the products being checked.
+
+    Returns:
+        A short URL-safe token.
+    """
+    return ("m" if morning_running else "c") + "-".join(str(i) for i in sorted(checking))
+
+
 class WebCore:
     """Shared plumbing: settings, templates, the database pool, Temporal and responses."""
 
@@ -197,6 +210,7 @@ class WebCore:
             "title_count": count,
             "temporal_ui": self.settings.temporal_ui_url,
             "busy": busy,
+            "bar_state": bar_state(morning_running, [t["id"] for t in tabs if t["checking"]]),
             "tz_name": zone.key,
             "tz_choices": timezone_choices(self.settings.default_timezone(), zone.key),
         }

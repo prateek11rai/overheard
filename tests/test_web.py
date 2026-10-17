@@ -539,6 +539,41 @@ def test_theme_counts_name_their_window(client):
     assert "↑ 14 in 4 weeks" in brief
 
 
+def test_the_menu_flips_back_when_a_check_now_finishes(client):
+    client.post("/products", data={"name": "Tidyshelf", "phrases": ["a b c"]}, headers=ORIGIN)
+
+    async def run(action):
+        async with Database(TEST_DSN, SCHEMA) as db:
+            product = await db.product_by_slug("tidyshelf")
+            if action == "start":
+                await db.upsert_run("check-tidyshelf-2", "check", product.id)
+                await db.add_step(
+                    (await db.run_by_workflow("check-tidyshelf-2")).id,
+                    "plan",
+                    "planned",
+                    product_id=product.id,
+                )
+            else:
+                await db.finish_run((await db.run_by_workflow("check-tidyshelf-2")).id, "done")
+
+    asyncio.run(run("start"))
+    page = client.get("/p/tidyshelf").text
+    bar = page.split("</header>")[0]
+    assert "Checking…" in bar
+    poll = re.search(r'hx-get="(/api/bar\?state=[^"]+)" hx-trigger="every 3s"', bar)
+    assert poll, "a bar drawn while a run is going polls for the end of it"
+    url = poll.group(1).replace("&amp;", "&")
+    assert client.get(url, headers=ask("/p/tidyshelf")).status_code == 204
+
+    asyncio.run(run("finish"))
+    r = client.get(url, headers=ask("/p/tidyshelf"))
+    assert r.status_code == 200
+    assert 'id="bar" hx-swap-oob="true"' in r.text
+    assert "Check now" in r.text and "Checking…" not in r.text
+    assert "/api/bar?state=" not in r.text
+    assert "closePopovers" not in r.headers.get("HX-Trigger", "")
+
+
 def test_a_product_never_checked_says_so_and_refreshes(client):
     client.post("/products", data={"name": "Tidyshelf", "phrases": ["a b c"]}, headers=ORIGIN)
     page = client.get("/p/tidyshelf").text

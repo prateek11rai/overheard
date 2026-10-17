@@ -35,4 +35,5 @@
     </details>
     <a class="btn" href="/settings">Settings</a>
   </div>
+  {%- if busy %}<span hidden hx-get="/api/bar?state={{ bar_state }}" hx-trigger="every 3s" hx-swap="none"></span>{% endif %}
 </header>

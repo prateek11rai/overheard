@@ -174,6 +174,13 @@ def register(app: FastAPI, web: Web) -> None:
         oob = ["_bar.html", "_runs_main.html"]
         return web._fragment(request, None, ctx, toast="Morning brief started", oob=oob)
 
+    @app.get("/api/bar", response_class=HTMLResponse)
+    async def bar_poll(request: Request, state: str = "") -> Response:
+        ctx = await web._chrome(request)
+        if ctx["bar_state"] == state:
+            return Response(status_code=204)
+        return web._fragment(request, None, ctx, oob=["_bar.html"], close_popovers=False)
+
     @app.get("/api/brief/{slug}", response_class=HTMLResponse)
     async def brief_fragment(request: Request, slug: str) -> Response:
         product = await web._db().product_by_slug(slug)
