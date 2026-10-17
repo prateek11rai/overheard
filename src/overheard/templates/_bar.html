@@ -11,7 +11,7 @@
           <button class="mi danger" type="button" data-dialog-open="del-{{ t.id }}">Delete…</button>
         </div>
       </details>
-      <dialog id="del-{{ t.id }}"><h3>Delete {{ t.name }}?</h3><p class="dim" style="margin-top:10px">Its posts, themes and runs go too. This can't be undone.</p><div class="row" style="margin-top:22px"><button class="btn danger" type="button" hx-delete="/api/products/{{ t.id }}" hx-swap="none">Delete {{ t.name }}</button><button class="btn" type="button" data-dialog-close>Keep it</button></div></dialog>
+      <dialog id="del-{{ t.id }}"><h3>Delete {{ t.name }}?</h3><p class="dim" style="margin-top:10px">Its posts, themes and runs go too; the Reddit searches it used still count toward your SerpApi plan. This can't be undone.</p><div class="row" style="margin-top:22px"><button class="btn danger" type="button" hx-delete="/api/products/{{ t.id }}" hx-swap="none">Delete {{ t.name }}</button><button class="btn" type="button" data-dialog-close>Keep it</button></div></dialog>
     </div>
     {%- endfor %}
     <a class="tab" href="/products/new" title="Add a product">＋ Add</a>

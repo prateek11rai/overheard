@@ -108,3 +108,26 @@ async def test_saved_posts_keep_the_comment_flag(db):
     await db.upsert_posts(product.id, [comment], None)
     [saved] = await db.unlabelled_posts(product.id)
     assert saved.is_comment
+
+
+async def test_deleting_a_product_keeps_its_paid_searches(db):
+    product = await add_product(db)
+
+    async def fetch():
+        return found(2)
+
+    await search_once(
+        db,
+        run_key="r",
+        product_id=product.id,
+        phrase="p",
+        source="reddit",
+        day=date(2026, 10, 18),
+        fetch=fetch,
+    )
+    await db.delete_product(product.id)
+    assert await db.reddit_used(date(2026, 10, 1)) == 1
+    row = await db._one("SELECT product_id FROM search_ledger")
+    assert row["product_id"] is None
+    await db.delete_everything()
+    assert await db.reddit_used(date(2026, 10, 1)) == 0

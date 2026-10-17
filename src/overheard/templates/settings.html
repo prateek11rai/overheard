@@ -32,6 +32,6 @@
       <button class="btn danger" type="button" data-dialog-open="delete-all">Delete everything</button>
     </div>
     <dialog id="clear-demo"><h3>Remove demo data?</h3><p class="dim" style="margin-top:10px">Mealwise, Shipnote and Plantpal samples go, with their posts and runs. Your own products stay.</p><div class="row" style="margin-top:22px"><button class="btn primary" type="button" hx-post="/api/demo/clear" hx-swap="none">Remove demo data</button><button class="btn" type="button" data-dialog-close>Cancel</button></div></dialog>
-    <dialog id="delete-all"><h3>Delete everything?</h3><p class="dim" style="margin-top:10px">Every product, post, theme and run. This can't be undone.</p><div class="row" style="margin-top:22px"><button class="btn danger" type="button" hx-post="/api/data/delete-all" hx-swap="none">Delete everything</button><button class="btn" type="button" data-dialog-close>Cancel</button></div></dialog>
+    <dialog id="delete-all"><h3>Delete everything?</h3><p class="dim" style="margin-top:10px">Every product, post, theme and run, and the count of Reddit searches used, so SerpApi caps start over. This can't be undone.</p><div class="row" style="margin-top:22px"><button class="btn danger" type="button" hx-post="/api/data/delete-all" hx-swap="none">Delete everything</button><button class="btn" type="button" data-dialog-close>Cancel</button></div></dialog>
   </section>
 {% endblock %}
