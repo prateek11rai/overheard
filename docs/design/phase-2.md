@@ -51,3 +51,12 @@ When everything above is done and checked, print exactly `DONE-overheard-phase2`
 ## Answers
 
 (The planner adds answers to your questions here.)
+
+**A1 (Q1, empty Run now email) · Option 1.** A hand-started **Run now** emails the full open brief (what the app shows); scheduled mornings and Check now stay "new in this run". Add the test.
+
+**A2 (Q2, no Hacker News posts) · Option 1.** Delete Supabase and Obsidian and add them again through the UI, so their first checks rerun with all-words HN matching (+4 searches; phase total 9 of 12 with step 8).
+
+**Email order, to stay at 3 emails:** keep `EMAIL_MODE=file` while you re-add the two products (their first-check digests go to files; check them). Then switch to `smtp`, restart, send `overheard email-test` (1), then **Run now** (2, full briefs per A1). Then ask the owner in this window to confirm both arrived and look right.
+
+**Your FYI decisions are fine:** step 8's worker with `EMAIL_MODE=file` in its process environment; the temporary third Obsidian phrase, removed afterwards; moving the morning time away if you work past 06:50 IST and setting it back to 07:00 Asia/Kolkata at the end.
+
