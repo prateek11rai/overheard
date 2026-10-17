@@ -621,3 +621,16 @@ def test_tab_caret_is_a_visible_labelled_triangle(client):
     bar = client.get("/p/demo-mealwise").text.split("</header>")[0]
     caret = re.search(r'<summary class="caret"[^>]*>(.*?)</summary>', bar, re.S)
     assert caret and "<svg" in caret.group(1) and 'aria-label="Mealwise menu"' in caret.group(0)
+
+
+def test_setup_says_what_is_off(client, monkeypatch):
+    async def all_up(found):
+        return [{"name": "Postgres + pgvector", "ok": True, "fix": ""}]
+
+    page = client.get("/setup").text
+    assert "all systems ready" not in page
+    from overheard.web.views import Views
+
+    monkeypatch.setattr(Views, "_system_checks", lambda self, found: all_up(found))
+    page = client.get("/setup").text
+    assert "✓ ready · Reddit off · email to file" in page

@@ -26,7 +26,7 @@
     {% if failing %}
     <ul class="checks small">{% for c in failing %}<li><span class="bad">✗</span><span><b>{{ c.name }}</b> · {{ c.fix }}</span></li>{% endfor %}</ul>
     {% else %}
-    <span class="badge ok">✓ all systems ready</span>
+    <span class="badge ok">{{ ready_text }}</span>
     {% endif %}
     <a class="btn primary big" href="{{ '/' if has_products else '/products/new' }}">Continue</a>
   </div>

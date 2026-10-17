@@ -107,11 +107,23 @@ class Views(WebCore):
             "chat_in_use": chat_in_use,
             "checks": checks,
             "failing": [c for c in checks if not c["ok"]],
+            "ready_text": self._ready_text(),
             "recipient": recipient,
             "steps_done": steps_done,
             "now_step": now_step,
             "has_products": bool(products),
         }
+
+    def _ready_text(self) -> str:
+        parts = ["✓ ready"]
+        if self.settings.serpapi_api_key is None:
+            parts.append("Reddit off")
+        parts.append(
+            {"file": "email to file", "off": "email off"}.get(
+                self.settings.email_mode or "off", "email on"
+            )
+        )
+        return " · ".join(parts)
 
     async def _system_checks(self, found: Any) -> list[dict[str, Any]]:
         checks = [{"name": "Postgres + pgvector", "ok": True, "fix": ""}]
