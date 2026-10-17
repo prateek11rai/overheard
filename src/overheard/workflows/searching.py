@@ -39,6 +39,7 @@ class SearchActivities(ActivitiesBase):
         run_id = await self.db.upsert_run(args.workflow_id, "morning", None, plan.reddit_searches)
         for p in plan.products:
             p.run_key, p.run_id = args.workflow_id, run_id
+            p.full_brief = args.trigger == "manual"
         await self._record_plan(run_id, plan)
         reason = plan.reason if plan.products else "nothing to check"
         return PlanResult(run_id, args.workflow_id, plan.products, plan.mode, reason)

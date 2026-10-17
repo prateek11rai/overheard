@@ -157,3 +157,32 @@ async def test_send_digest_names_the_file_by_the_schedules_day(db, test_settings
     await ActivityEnvironment().run(acts.send_digest, ScanArgs(product.id, run_id, "wf-day", None))
     [path] = test_settings.digests_dir.glob("*.html")
     assert path.name.startswith(today_in(zone).isoformat() + "-")
+
+
+async def test_run_now_emails_the_whole_open_brief(db, test_settings):
+    from overheard.pipeline import ProductPlan
+
+    product, _ = await prepared(db, "check-earlier")
+    acts = Activities(test_settings, db)
+    env = ActivityEnvironment()
+    later = await db.upsert_run("run-now-later", "morning")
+    plan = ProductPlan(product.id, product.slug, product.name, [], [])
+    args = ScanArgs(product.id, later, "morning-brief-later", plan)
+    assert await env.run(acts.send_digest, args) == "Quiet morning · no email"
+    plan.full_brief = True
+    args = ScanArgs(product.id, later, "run-now-later", plan)
+    assert await env.run(acts.send_digest, args) in mail.SENT_OUTCOMES
+    [path] = test_settings.digests_dir.glob("*.html")
+    assert "Fridge planner?" in path.read_text(encoding="utf-8")
+
+
+async def test_only_a_hand_started_morning_plans_full_briefs(db, test_settings):
+    from overheard.workflows import PlanArgs
+
+    await add_product(db, recipients=[])
+    acts = Activities(test_settings, db)
+    env = ActivityEnvironment()
+    manual = await env.run(acts.plan_morning, PlanArgs("run-now-x", trigger="manual"))
+    scheduled = await env.run(acts.plan_morning, PlanArgs("morning-brief-x"))
+    assert [p.full_brief for p in manual.products] == [True]
+    assert [p.full_brief for p in scheduled.products] == [False]

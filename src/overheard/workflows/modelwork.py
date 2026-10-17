@@ -141,6 +141,9 @@ class ModelActivities(ActivitiesBase):
     async def send_digest(self, args: ScanArgs) -> str:
         """Email the product's digest (or write it to a file, or keep it in the app).
 
+        A scheduled morning or a Check now sends the posts found in that run; a hand-started
+        Run now sends the whole open brief, as the app shows it.
+
         Args:
             args: The planned product.
 
@@ -155,7 +158,8 @@ class ModelActivities(ActivitiesBase):
             return "product gone"
         tz = await self.db.get_setting("timezone") or self.settings.default_timezone()
         run = await self.db.run(args.run_id) if args.run_id else None
-        since = run.started_at if run is not None else None
+        full = args.plan is not None and args.plan.full_brief
+        since = run.started_at if run is not None and not full else None
         brief = await pipeline.brief_for(self.db, product, tz, since=since)
         text = await mail.deliver_once(self.db, self.settings, product, brief, args.run_key, tz=tz)
         await self.db.add_step(
