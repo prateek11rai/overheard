@@ -1,0 +1,29 @@
+{
+  "hits": [
+    {
+      "objectID": "41000001",
+      "created_at_i": 1792200000,
+      "title": "Ask HN: How do you plan weekly meals?",
+      "story_text": "<p>Anything that works from my pantry instead of a recipe database? Every app assumes I&#x27;ll buy everything fresh.</p>",
+      "url": null,
+      "_tags": ["story", "author_x", "story_41000001", "ask_hn"]
+    },
+    {
+      "objectID": "41000002",
+      "created_at_i": 1792203600,
+      "comment_text": "Every inventory app wants me to scan every can.<p>I won&#x27;t. <a href=\"https:&#x2F;&#x2F;example.com\">link</a>",
+      "story_id": 41000001,
+      "story_title": "Ask HN: How do you plan weekly meals?",
+      "_tags": ["comment", "author_y", "story_41000001"]
+    },
+    {
+      "objectID": "not-a-number",
+      "created_at_i": 1792203600,
+      "title": "Broken hit"
+    }
+  ],
+  "nbHits": 3,
+  "page": 0,
+  "nbPages": 1,
+  "hitsPerPage": 50
+}

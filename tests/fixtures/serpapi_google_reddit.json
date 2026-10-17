@@ -1,0 +1,46 @@
+{
+  "search_metadata": {"status": "Success", "id": "fixture-0001"},
+  "search_parameters": {"engine": "google", "q": "site:reddit.com \"meal plan from fridge\"", "tbs": "qdr:d"},
+  "organic_results": [
+    {
+      "position": 1,
+      "title": "Is there an app that plans meals from what's already in my fridge? : r/MealPrepSunday",
+      "link": "https://www.reddit.com/r/MealPrepSunday/comments/abc123/is_there_an_app_that_plans_meals/",
+      "snippet": "I keep buying the same things and throwing half of it away. Is there an app that plans the week around what I already have?",
+      "date": "9 hours ago",
+      "source": "Reddit · r/MealPrepSunday"
+    },
+    {
+      "position": 2,
+      "title": "Food goes bad before I use it - Reddit",
+      "link": "https://old.reddit.com/r/EatCheapAndHealthy/comments/def456/food_goes_bad/?utm_source=share",
+      "snippet": "I throw out a bag of spinach every single week and I hate it.",
+      "date": "2 days ago"
+    },
+    {
+      "position": 3,
+      "title": "r/Cooking wiki",
+      "link": "https://www.reddit.com/r/Cooking/wiki/index",
+      "snippet": "Not a thread."
+    },
+    {
+      "position": 4,
+      "title": "Meal planning apps compared",
+      "link": "https://example.com/blog/meal-planning-apps",
+      "snippet": "Not Reddit."
+    },
+    {
+      "position": 5,
+      "title": "Is there an app that plans meals from what's already in my fridge? : r/MealPrepSunday",
+      "link": "https://www.reddit.com/r/MealPrepSunday/comments/abc123/is_there_an_app_that_plans_meals/",
+      "snippet": "Duplicate result."
+    },
+    {
+      "position": 6,
+      "title": "Weekly planning thread | Reddit",
+      "link": "https://www.reddit.com/r/mealprep/comments/ghi789/weekly_planning_thread/",
+      "snippet": "Planning takes longer than cooking for me.",
+      "date": "Oct 15, 2026"
+    }
+  ]
+}
