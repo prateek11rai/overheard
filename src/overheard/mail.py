@@ -260,10 +260,10 @@ async def send_test(settings: Settings, recipient: str | None) -> str:
     html = _env.get_template("test.html").render({"link": settings.app_url})
     subject = "Overheard: test email"
     if settings.email_mode == "file":
-        write_file(settings, "test", subject, html, run="test")
-        return "Test email saved to .data/digests"
+        path = write_file(settings, "test", subject, html, run="test")
+        return f"Test email saved to {path}"
     if settings.email_mode != "smtp" or not settings.smtp_host:
-        return "Email isn't set up. Add SMTP_* to .env"
+        return "Email is off, so nothing was sent. Add SMTP_* to .env to send email."
     to = [recipient] if recipient else ([settings.smtp_user] if settings.smtp_user else [])
     if not to:
         return "No address to send to"

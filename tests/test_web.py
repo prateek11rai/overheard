@@ -634,3 +634,14 @@ def test_setup_says_what_is_off(client, monkeypatch):
     monkeypatch.setattr(Views, "_system_checks", lambda self, found: all_up(found))
     page = client.get("/setup").text
     assert "✓ ready · Reddit off · email to file" in page
+
+
+def test_send_a_test_says_where_it_went(client, settings, tmp_path):
+    r = client.post("/api/email/test", headers=ask("/settings"))
+    message = json.loads(r.headers["HX-Trigger"])["toast"]["text"]
+    assert message.startswith("Test email saved to ") and "-test-test.html" in message
+    assert str(settings.digests_dir) in message
+    off = settings_for(tmp_path / "off", email_mode="off")
+    with TestClient(create_app(off), base_url="http://127.0.0.1:8000") as c:
+        r = c.post("/api/email/test", headers=ask("/settings"))
+        assert "Email is off" in json.loads(r.headers["HX-Trigger"])["toast"]["text"]
