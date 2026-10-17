@@ -2,10 +2,11 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import SecretStr, model_validator
+from pydantic import SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 LOCAL_HOSTS = frozenset({"127.0.0.1", "localhost", "::1"})
+MIN_PASSWORD = 12
 
 
 class Settings(BaseSettings):
@@ -52,6 +53,19 @@ class Settings(BaseSettings):
     overheard_data_dir: Path = Path(".data")
     overheard_offline: bool = False
     overheard_temporal_bin: Path | None = None
+
+    @field_validator("overheard_password", mode="before")
+    @classmethod
+    def _password(cls, value: object) -> object:
+        if value is None:
+            return None
+        raw = value.get_secret_value() if isinstance(value, SecretStr) else str(value)
+        raw = raw.strip()
+        if not raw:
+            return None
+        if len(raw) < MIN_PASSWORD:
+            raise ValueError(f"OVERHEARD_PASSWORD must be at least {MIN_PASSWORD} characters")
+        return raw
 
     @model_validator(mode="after")
     def _derive_defaults(self) -> "Settings":

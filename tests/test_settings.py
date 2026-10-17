@@ -108,3 +108,22 @@ def test_temporal_binary_is_homebrews_never_one_on_path(tmp_path, monkeypatch):
     assert temporal_binary(fake) == fake
     with pytest.raises(TemporalNotFoundError, match="brew install temporal"):
         temporal_binary(tmp_path / "missing")
+
+
+@pytest.mark.parametrize("blank", ["", "   ", "\t"])
+def test_blank_password_counts_as_unset(clean_env, monkeypatch, blank):
+    monkeypatch.setenv("OVERHEARD_PASSWORD", blank)
+    assert Settings(_env_file=None).overheard_password is None
+
+
+def test_short_password_is_rejected(clean_env, monkeypatch):
+    monkeypatch.setenv("OVERHEARD_PASSWORD", "short-pw")
+    with pytest.raises(ValueError, match="at least 12 characters"):
+        Settings(_env_file=None)
+
+
+def test_long_password_is_kept(clean_env, monkeypatch):
+    monkeypatch.setenv("OVERHEARD_PASSWORD", "  a-long-enough-password  ")
+    assert (
+        Settings(_env_file=None).overheard_password.get_secret_value() == "a-long-enough-password"
+    )

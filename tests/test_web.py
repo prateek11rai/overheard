@@ -302,3 +302,14 @@ def test_helpers():
         == "https://news.ycombinator.com/item?id=1"
     )
     assert parse_emails("a@b.co, nope; c@d.io a@b.co") == ["a@b.co", "c@d.io"]
+
+
+def test_blank_password_on_another_host_refuses_to_start(tmp_path, monkeypatch):
+    monkeypatch.setenv("OVERHEARD_PASSWORD", "   ")
+    monkeypatch.setenv("OVERHEARD_HOST", "0.0.0.0")
+    s = Settings(_env_file=None, database_url=TEST_DSN)
+    with pytest.raises(RuntimeError, match="OVERHEARD_PASSWORD"):
+        create_app(s)
+    from overheard import cli
+
+    assert cli._web(s) == 2
