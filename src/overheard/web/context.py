@@ -600,7 +600,8 @@ class Web:
         ctx["products"] = await self._db().products()
         oob = ["_bar.html"]
         if self._current_path(request) == "/settings":
-            oob.append("_settings_products.html")
+            oob += ["_settings_products.html", "_reddit_plan.html"]
+            ctx["reddit"] = await self._reddit_ctx()
         slug = self._active_slug(request)
         product = await self._db().product_by_slug(slug) if slug else None
         if product is not None and not self._current_path(request).endswith(("/review", "/themes")):

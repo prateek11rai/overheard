@@ -1,0 +1,11 @@
+<div id="reddit-plan"{% if oob %} hx-swap-oob="true"{% endif %}>
+        <div class="eq"><span class="term">{{ reddit.phrases }} phrase{{ '' if reddit.phrases == 1 else 's' }}</span><span class="op">×</span><span class="term">1 a day</span><span class="op">=</span><span class="term res">{{ reddit.projected }} this month</span></div>
+        {% if reddit.plan %}
+        <div class="meter"><i style="width:{{ reddit.meter }}%"></i></div>
+        <div class="row between small" style="margin-top:8px"><span class="dim">Your SerpApi plan: {{ reddit.plan }}</span>{% if reddit.fits %}<span class="badge ok">fits</span>{% else %}<span class="badge warn">rotating</span>{% endif %}</div>
+        {% elif reddit.has_key %}
+        <div class="row between small" style="margin-top:12px"><span class="dim">Plan size shows after the first run.</span></div>
+        {% else %}
+        <div class="row between small" style="margin-top:12px"><span class="dim">Reddit off · Hacker News only. Add <span class="mono">SERPAPI_API_KEY</span> to .env to turn it on.</span><span class="badge">Hacker News only</span></div>
+        {% endif %}
+</div>

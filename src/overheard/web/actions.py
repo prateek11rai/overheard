@@ -353,7 +353,9 @@ def register(app: FastAPI, web: Web) -> None:
 
     @app.post("/api/demo/clear")
     async def demo_clear() -> Response:
-        await web._db().delete_demo()
+        from overheard import demo
+
+        await demo.clear(web._db(), web.settings)
         response = Response("")
         response.headers["HX-Redirect"] = "/?done=demo-cleared"
         return response

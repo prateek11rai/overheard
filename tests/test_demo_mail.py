@@ -111,3 +111,50 @@ async def test_the_email_subline_names_the_current_run(db, test_settings):
     assert brief.status.endswith("at 07:00")
     page_brief = await pipeline.brief_for(db, product, "UTC")
     assert page_brief.subline.startswith("Friday morning")
+
+
+async def test_demo_clear_deletes_only_demo_digests(db, test_settings):
+    await demo.load(db, test_settings)
+    folder = test_settings.digests_dir
+    keep = [
+        folder / "2026-10-18-runnow1-mealwise.html",
+        folder / "2026-10-18-runnow1-acme-demo-mealwise.html",
+        folder / "2026-10-18-mealwise.html",
+    ]
+    for f in keep:
+        f.write_text("x")
+    (folder / "2026-10-17-demo-shipnote.html").write_text("old-style demo name")
+    await demo.clear(db, test_settings)
+    assert sorted(f.name for f in folder.iterdir()) == sorted(f.name for f in keep)
+
+
+async def test_demo_load_is_all_or_nothing(db, test_settings, monkeypatch):
+    await demo.load(db, test_settings)
+    before = {p.slug for p in await db.products()}
+    runs_before = len(await db.runs())
+
+    async def broken(*args, **kwargs):
+        raise RuntimeError("disk full halfway")
+
+    monkeypatch.setattr(demo, "_runs", broken)
+    import pytest as _pytest
+
+    with _pytest.raises(RuntimeError, match="halfway"):
+        await demo.load(db, test_settings)
+    assert {p.slug for p in await db.products()} == before
+    assert len(await db.runs()) == runs_before
+    counts = await db.open_counts()
+    assert sorted(counts.values()) == [3, 7]
+
+
+async def test_transactions_bind_every_query(db):
+    import pytest as _pytest
+
+    from tests.conftest import add_product
+
+    with _pytest.raises(RuntimeError):
+        async with db.transaction() as tx:
+            await add_product(tx, slug="inside", name="Inside")
+            assert await tx.product_by_slug("inside") is not None
+            raise RuntimeError("roll back")
+    assert await db.product_by_slug("inside") is None

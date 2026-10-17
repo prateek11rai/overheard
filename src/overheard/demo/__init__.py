@@ -26,6 +26,7 @@ from overheard.demo.types import DemoPost, DemoTheme
 from overheard.settings import Settings
 
 DEMO_PREFIX = "demo-"
+DEMO_SLUGS = ("demo-mealwise", "demo-shipnote", "demo-plantpal")
 REDDIT = "https://www.reddit.com/r/{sub}/comments/demo{n}/{slug}/"
 HN = "https://news.ycombinator.com/item?id=9{n:07d}"
 
@@ -168,31 +169,32 @@ async def load(db: Database, settings: Settings) -> dict[str, Product]:
         The demo products by slug.
     """
     _check_quotes()
-    await db.delete_demo()
     zone = ZoneInfo(await db.get_setting("timezone") or settings.default_timezone())
     hhmm = await db.get_setting("morning_time") or "07:00"
     base = _last_morning(datetime.now(UTC), zone, hhmm)
-    loader = _Loader(db, base)
     products: dict[str, Product] = {}
-    for spec in (MEALWISE, SHIPNOTE, PLANTPAL):
-        fields = {**spec, "demo": True}
-        products[spec["slug"]] = await db.create_product(**fields)
+    # All or nothing: if anything fails, the previous demo data stays as it was.
+    async with db.transaction() as tx:
+        await tx.delete_demo()
+        loader = _Loader(tx, base)
+        for spec in (MEALWISE, SHIPNOTE, PLANTPAL):
+            fields = {**spec, "demo": True}
+            products[spec["slug"]] = await tx.create_product(**fields)
+        mealwise, shipnote, plantpal = (products[s] for s in DEMO_SLUGS)
+        for p in MEALWISE_OPEN:
+            await loader.add(mealwise, p, base + timedelta(minutes=1))
+        for p in MEALWISE_NOISE:
+            await loader.add(mealwise, p, base + timedelta(minutes=1))
+        for p in MEALWISE_OLDER:
+            await loader.add(mealwise, p, base - timedelta(days=p.days))
+        await loader.themes(mealwise, MEALWISE_THEMES)
+        for p in SHIPNOTE_OPEN + SHIPNOTE_NOISE:
+            await loader.add(shipnote, p, base + timedelta(minutes=1))
+        await loader.themes(shipnote, SHIPNOTE_THEMES)
+        await loader.themes(plantpal, PLANTPAL_THEMES)
+        await _runs(tx, base, products)
 
-    mealwise, shipnote, plantpal = (products[s] for s in ("demo-mealwise", "demo-shipnote",
-                                                         "demo-plantpal"))  # fmt: skip
-    for p in MEALWISE_OPEN:
-        await loader.add(mealwise, p, base + timedelta(minutes=1))
-    for p in MEALWISE_NOISE:
-        await loader.add(mealwise, p, base + timedelta(minutes=1))
-    for p in MEALWISE_OLDER:
-        await loader.add(mealwise, p, base - timedelta(days=p.days))
-    await loader.themes(mealwise, MEALWISE_THEMES)
-    for p in SHIPNOTE_OPEN + SHIPNOTE_NOISE:
-        await loader.add(shipnote, p, base + timedelta(minutes=1))
-    await loader.themes(shipnote, SHIPNOTE_THEMES)
-    await loader.themes(plantpal, PLANTPAL_THEMES)
-    await _runs(db, base, products)
-
+    _delete_digests(settings)
     for product in products.values():
         brief = await pipeline.brief_for(db, product, str(zone))
         if brief.total == 0:
@@ -203,8 +205,37 @@ async def load(db: Database, settings: Settings) -> dict[str, Product]:
     return products
 
 
+def is_demo_digest(name: str) -> bool:
+    """Whether a digest file belongs to a demo product (exact slug, never a real product).
+
+    Names are `<date>-<run>-<slug>.html` (the run tag has no dashes); older demo files were
+    `<date>-<slug>.html`.
+
+    Args:
+        name: The file name.
+
+    Returns:
+        True for a demo product's digest.
+    """
+    if len(name) < 16 or not name.endswith(".html") or name[10:11] != "-":
+        return False
+    rest = name[11:-5]
+    if rest in DEMO_SLUGS:
+        return True
+    _, _, slug = rest.partition("-")
+    return slug in DEMO_SLUGS
+
+
+def _delete_digests(settings: Settings) -> None:
+    folder = settings.digests_dir
+    if folder.exists():
+        for f in folder.iterdir():
+            if f.is_file() and is_demo_digest(f.name):
+                f.unlink()
+
+
 async def clear(db: Database, settings: Settings) -> int:
-    """Remove demo products (and everything that hangs off them) and demo digests.
+    """Remove demo products (and everything that hangs off them) and their digest files.
 
     Args:
         db: Database.
@@ -214,10 +245,7 @@ async def clear(db: Database, settings: Settings) -> int:
         Demo products removed.
     """
     n = await db.delete_demo()
-    folder = settings.digests_dir
-    if folder.exists():
-        for f in folder.glob(f"*-{DEMO_PREFIX}*.html"):
-            f.unlink()
+    _delete_digests(settings)
     return n
 
 

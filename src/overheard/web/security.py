@@ -24,9 +24,13 @@ def slugify(name: str) -> str:
         name: Product name.
 
     Returns:
-        Lowercase words joined by dashes (or `product`).
+        Lowercase words joined by dashes (or `product`); never starts with `demo-`,
+        which is reserved for demo products.
     """
-    return SLUG_RE.sub("-", name.lower()).strip("-")[:40] or "product"
+    slug = SLUG_RE.sub("-", name.lower()).strip("-")[:40] or "product"
+    if slug == "demo" or slug.startswith("demo-"):
+        slug = f"p-{slug}"  # the demo- prefix is reserved for demo products
+    return slug
 
 
 def safe_url(url: str | None) -> str:

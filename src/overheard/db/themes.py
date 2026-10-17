@@ -147,7 +147,7 @@ class ThemeQueries(DatabaseCore):
             theme_id: Theme id.
             centroid: The theme's updated centroid.
         """
-        async with self.pool.connection() as conn, conn.transaction():
+        async with self._connection() as conn, conn.transaction():
             await conn.execute("UPDATE posts SET theme_id = %s WHERE id = %s", (theme_id, post_id))
             await conn.execute(
                 "UPDATE themes SET centroid = %s, post_count = "
@@ -184,7 +184,7 @@ class ThemeQueries(DatabaseCore):
         Returns:
             Number of themes updated.
         """
-        async with self.pool.connection() as conn, conn.transaction():
+        async with self._connection() as conn, conn.transaction():
             cur = await conn.execute(
                 "UPDATE themes t SET centroid = c.centroid, embed_model = %s FROM ("
                 " SELECT p.theme_id, avg(e.embedding) AS centroid FROM posts p"

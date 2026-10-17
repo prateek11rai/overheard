@@ -23,7 +23,7 @@ class PostQueries(DatabaseCore):
             (new posts saved, posts seen).
         """
         new = seen = 0
-        async with self.pool.connection() as conn:
+        async with self._connection() as conn:
             for p in posts:
                 seen += 1
                 cur = await conn.execute(

@@ -1,5 +1,7 @@
+import contextlib
+import copy
 import json
-from collections.abc import Sequence
+from collections.abc import AsyncIterator, Sequence
 from typing import Any, Self
 
 import psycopg
@@ -37,6 +39,7 @@ class DatabaseCore:
             configure=self._configure,
         )
         self._timescale: bool | None = None
+        self._conn: psycopg.AsyncConnection | None = None
 
     async def _configure(self, conn: psycopg.AsyncConnection) -> None:
         await conn.execute(
@@ -65,23 +68,44 @@ class DatabaseCore:
         """Close the pool at the end of an `async with` block."""
         await self.close()
 
+    @contextlib.asynccontextmanager
+    async def _connection(self) -> AsyncIterator[psycopg.AsyncConnection]:
+        if self._conn is not None:
+            yield self._conn
+        else:
+            async with self.pool.connection() as conn:
+                yield conn
+
+    @contextlib.asynccontextmanager
+    async def transaction(self) -> AsyncIterator[Self]:
+        """Run several queries as one transaction.
+
+        Yields:
+            A view of this database whose every query uses the same connection; it commits
+            when the block ends and rolls back if it raises.
+        """
+        async with self.pool.connection() as conn, conn.transaction():
+            tx = copy.copy(self)
+            tx._conn = conn
+            yield tx
+
     async def _all(self, query: str | sql.Composed, params: Sequence[Any] = ()) -> list[dict]:
-        async with self.pool.connection() as conn:
+        async with self._connection() as conn:
             cur = await conn.execute(query, params)
             return await cur.fetchall()
 
     async def _one(self, query: str | sql.Composed, params: Sequence[Any] = ()) -> dict | None:
-        async with self.pool.connection() as conn:
+        async with self._connection() as conn:
             cur = await conn.execute(query, params)
             return await cur.fetchone()
 
     async def _exec(self, query: str | sql.Composed, params: Sequence[Any] = ()) -> int:
-        async with self.pool.connection() as conn:
+        async with self._connection() as conn:
             cur = await conn.execute(query, params)
             return cur.rowcount
 
     async def _rows(self, cls: type, query: str, params: Sequence[Any] = ()) -> list:
-        async with self.pool.connection() as conn, conn.cursor(row_factory=class_row(cls)) as cur:
+        async with self._connection() as conn, conn.cursor(row_factory=class_row(cls)) as cur:
             await cur.execute(query, params)
             return await cur.fetchall()
 

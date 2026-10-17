@@ -449,3 +449,40 @@ def test_csv_cells_that_look_like_formulas_are_escaped():
     assert csv_safe(None) is None
     assert csv_safe("plain text") == "plain text"
     assert csv_safe(3) == 3
+
+
+def test_real_products_cannot_take_the_demo_prefix(client):
+    r = client.post(
+        "/products", data={"name": "Demo Tracker"}, headers=ORIGIN, follow_redirects=False
+    )
+    assert r.headers["location"].startswith("/p/p-demo-tracker")
+
+
+def test_remove_demo_data_in_the_web_deletes_demo_digests(client, settings):
+    folder = settings.digests_dir
+    assert any("-demo-" in f.name for f in folder.iterdir())
+    client.post("/api/demo/clear", headers=ask("/settings"))
+    assert not any("demo-" in f.name for f in folder.iterdir())
+
+
+def test_pause_on_settings_refreshes_the_search_plan(client):
+    page = client.get("/settings").text
+    assert "7 phrases" in page
+    pid = re.search(r"/api/products/(\d+)/pause", page).group(1)
+    r = client.post(f"/api/products/{pid}/pause", headers=ask("/settings"))
+    assert 'id="reddit-plan" hx-swap-oob="true"' in r.text
+    assert "2 phrases" in r.text.split('id="reddit-plan"')[1]
+
+
+def test_check_now_on_the_run_log_adds_its_row(client, monkeypatch):
+    fake = FakeTemporal()
+
+    async def connect(_settings):
+        return fake
+
+    monkeypatch.setattr("overheard.workflows.connect", connect)
+    page = client.get("/runs").text
+    pid = re.search(r"/api/products/(\d+)/check", page).group(1)
+    r = client.post(f"/api/products/{pid}/check", headers=ask("/runs"))
+    assert 'id="runs-main" hx-swap-oob="true"' in r.text
+    assert "Check · Mealwise" in r.text
