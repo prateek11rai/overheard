@@ -229,6 +229,7 @@ with workflow.unsafe.imports_passed_through():
     from overheard.workflows.runtime import (
         build_schedule,
         connect,
+        ensure_schedule,
         parse_time,
         run_brief_now,
         run_worker,
@@ -266,6 +267,7 @@ __all__ = [
     "WORKFLOWS",
     "build_schedule",
     "connect",
+    "ensure_schedule",
     "parse_time",
     "run_brief_now",
     "run_worker",

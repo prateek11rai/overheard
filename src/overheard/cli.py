@@ -109,6 +109,15 @@ async def _setup(settings: Settings) -> int:
                         await db.ensure_embedding_index(models[role], info.dim)
     tbin, why = _temporal_bin(settings)
     _line(OK if tbin else BAD, "temporal", tbin or why)
+    from overheard import workflows
+
+    try:
+        client = await asyncio.wait_for(workflows.connect(settings), timeout=5)
+        async with Database(settings.dsn, settings.overheard_db_schema, max_size=2) as db:
+            result = await workflows.ensure_schedule(client, db)
+        _line(OK, "schedule", f"{workflows.SCHEDULE_ID} {result}")
+    except Exception:
+        _line(LATER, "schedule", "Temporal isn't running; the worker creates it when it starts")
     return 0
 
 

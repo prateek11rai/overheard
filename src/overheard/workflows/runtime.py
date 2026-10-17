@@ -103,31 +103,76 @@ def build_schedule(time_of_day: str, tz: str, paused: bool):
     )
 
 
-async def sync_schedule(client: Any, time_of_day: str, tz: str, paused: bool) -> None:
-    """Create or update the `morning-brief` schedule.
+def _schedule_shape(schedule: Any) -> tuple:
+    cal = schedule.spec.calendars[0] if schedule.spec.calendars else None
+    action = schedule.action
+    return (
+        cal.hour[0].start if cal and cal.hour else None,
+        cal.minute[0].start if cal and cal.minute else None,
+        schedule.spec.time_zone_name or "UTC",
+        bool(schedule.state.paused),
+        int(schedule.policy.catchup_window.total_seconds()),
+        schedule.policy.overlap,
+        getattr(action, "workflow", None),
+        getattr(action, "task_queue", None),
+    )
+
+
+async def sync_schedule(client: Any, time_of_day: str, tz: str, paused: bool) -> str:
+    """Create the `morning-brief` schedule, or update it only if it differs.
 
     Args:
         client: Temporal client.
         time_of_day: `HH:MM`.
         tz: IANA timezone.
         paused: Whether listening is paused.
-    """
-    from temporalio.client import ScheduleAlreadyRunningError, ScheduleUpdate
 
-    schedule = build_schedule(time_of_day, tz, paused)
-    try:
-        await client.create_schedule(SCHEDULE_ID, schedule)
-        return
-    except ScheduleAlreadyRunningError:
-        pass
+    Returns:
+        "created", "updated" or "unchanged".
+    """
+    from temporalio.client import ScheduleUpdate
+    from temporalio.service import RPCError, RPCStatusCode
+
+    wanted = build_schedule(time_of_day, tz, paused)
     handle = client.get_schedule_handle(SCHEDULE_ID)
-    await handle.update(lambda _: ScheduleUpdate(schedule=schedule))
+    try:
+        desc = await handle.describe()
+    except RPCError as exc:
+        if exc.status != RPCStatusCode.NOT_FOUND:
+            raise
+        await client.create_schedule(SCHEDULE_ID, wanted)
+        return "created"
+    current = _schedule_shape(desc.schedule)
+    target = _schedule_shape(wanted)
+    if current == target:
+        return "unchanged"
+    if current[:3] + current[4:] != target[:3] + target[4:]:
+        await handle.update(lambda _: ScheduleUpdate(schedule=wanted))
     desc = await handle.describe()
     if desc.schedule.state.paused != paused:
         if paused:
             await handle.pause(note="paused in Overheard")
         else:
             await handle.unpause(note="resumed in Overheard")
+    return "updated"
+
+
+async def ensure_schedule(client: Any, db: Database) -> str:
+    """Make the schedule match the time, timezone and pause switch stored in the app.
+
+    Safe to call on every start: an unchanged schedule is left alone.
+
+    Args:
+        client: Temporal client.
+        db: Database.
+
+    Returns:
+        "created", "updated" or "unchanged".
+    """
+    t, tz, paused = await schedule_settings(db)
+    if await db.get_setting("timezone") is None:
+        await db.set_setting("timezone", tz)
+    return await sync_schedule(client, t, tz, paused)
 
 
 async def schedule_settings(db: Database) -> tuple[str, str, bool]:
@@ -151,12 +196,9 @@ async def sync_schedule_from_db(settings: Settings) -> None:
     Args:
         settings: App settings.
     """
-    async with Database(settings.dsn, settings.overheard_db_schema, max_size=2) as db:
-        t, tz, paused = await schedule_settings(db)
-        if await db.get_setting("timezone") is None:
-            await db.set_setting("timezone", tz)
     client = await connect(settings)
-    await sync_schedule(client, t, tz, paused)
+    async with Database(settings.dsn, settings.overheard_db_schema, max_size=2) as db:
+        await ensure_schedule(client, db)
 
 
 async def temporal_status(settings: Settings) -> dict[str, Any]:
@@ -286,6 +328,7 @@ async def run_worker(settings: Settings) -> None:
 
     async with Database(settings.dsn, settings.overheard_db_schema) as db:
         client = await connect(settings)
+        print(f"schedule {SCHEDULE_ID}: {await ensure_schedule(client, db)}", flush=True)
         acts = Activities(settings, db)
         worker = Worker(
             client,

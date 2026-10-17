@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import os
 import uuid
 from collections import defaultdict
@@ -259,3 +260,42 @@ async def test_demo_products_are_never_scanned(db, test_settings):
     assert plan.products[0].reddit_phrases == []  # no SerpApi key
     run = await db.run(plan.run_id)
     assert run.kind == "morning" and run.status == "running"
+
+
+async def _wait_for_schedule(client, seconds: float = 20):
+    from overheard.workflows import SCHEDULE_ID
+
+    handle = client.get_schedule_handle(SCHEDULE_ID)
+    end = asyncio.get_running_loop().time() + seconds
+    while True:
+        try:
+            return await handle.describe()
+        except Exception:
+            if asyncio.get_running_loop().time() > end:
+                raise
+            await asyncio.sleep(0.2)
+
+
+async def test_worker_start_creates_the_schedule_and_a_restart_leaves_it(env, db, test_settings):
+    from overheard.workflows import ensure_schedule, run_worker
+
+    target = env.client.service_client.config.target_host
+    settings = test_settings.model_copy(update={"temporal_address": target})
+    await db.set_setting("morning_time", "06:30")
+    await db.set_setting("timezone", "Asia/Kolkata")
+    task = asyncio.create_task(run_worker(settings))
+    try:
+        first = await _wait_for_schedule(env.client)
+    finally:
+        task.cancel()
+        with contextlib.suppress(asyncio.CancelledError, Exception):
+            await task
+    cal = first.schedule.spec.calendars[0]
+    assert (cal.hour[0].start, cal.minute[0].start) == (6, 30)
+    assert first.schedule.spec.time_zone_name == "Asia/Kolkata"
+    assert first.schedule.policy.catchup_window.total_seconds() == 12 * 3600
+    assert await ensure_schedule(env.client, db) == "unchanged"
+    again = await _wait_for_schedule(env.client)
+    assert again.info.last_updated_at == first.info.last_updated_at
+    await db.set_setting("morning_time", "07:15")
+    assert await ensure_schedule(env.client, db) == "updated"
