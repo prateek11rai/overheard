@@ -108,6 +108,14 @@ class WebCore:
         m = re.match(r"^/p/([^/]+)", self._current_path(request))
         return m.group(1) if m else None
 
+    def _cost_text(self, product: Product) -> str:
+        if product.demo:
+            return "demo"
+        n = self._reddit_cost(product)
+        if self.settings.serpapi_api_key is None or not product.reddit_on:
+            return "Hacker News only"
+        return f"{n} search{'' if n == 1 else 'es'}"
+
     def _reddit_cost(self, product: Product) -> int:
         has_key = self.settings.serpapi_api_key is not None
         return pipeline.phrase_cost(
@@ -149,6 +157,7 @@ class WebCore:
                 "count": counts.get(p.id, 0),
                 "active": p.slug == active,
                 "cost": self._reddit_cost(p),
+                "cost_text": self._cost_text(p),
             }
             for p in products
         ]
@@ -168,6 +177,7 @@ class WebCore:
             tab["checking"] = morning_running or any(
                 r.kind == "check" and r.product_id == tab["id"] for r in running
             )
+        run_cost = sum(self._reddit_cost(p) for p in products if not p.paused)
         active_tab = next((t for t in tabs if t["active"]), None)
         count = active_tab["count"] if active_tab else sum(t["count"] for t in tabs)
         return {
@@ -177,7 +187,12 @@ class WebCore:
             "chip": "Paused" if paused_all else f"Daily at {morning}",
             "presets": TIME_PRESETS,
             "last_run": last_text,
-            "run_cost": sum(self._reddit_cost(p) for p in products if not p.paused),
+            "run_cost": run_cost,
+            "run_cost_text": (
+                "Hacker News only"
+                if self.settings.serpapi_api_key is None
+                else f"{run_cost} search{'' if run_cost == 1 else 'es'}"
+            ),
             "has_demo": any(p.demo for p in products),
             "title_count": count,
             "temporal_ui": self.settings.temporal_ui_url,

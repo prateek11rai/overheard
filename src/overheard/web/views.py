@@ -155,11 +155,11 @@ class Views(WebCore):
     def _phrase_badge(self, phrases: list[str], sources: str) -> str:
         n = len(phrases)
         has_key = self.settings.serpapi_api_key is not None
-        per_day = pipeline.phrase_cost(phrases, sources == "reddit+hn", has_key)
-        return (
-            f"{n} phrase{'s' if n != 1 else ''} · {per_day} search{'es' if per_day != 1 else ''}"
-            " a day"
-        )
+        words = f"{n} phrase{'s' if n != 1 else ''}"
+        if not has_key or sources != "reddit+hn":
+            return f"{words} · Hacker News only"
+        per_day = pipeline.phrase_cost(phrases, True, has_key)
+        return f"{words} · {per_day} search{'es' if per_day != 1 else ''} a day"
 
     def _form_fields(self, form: Any) -> dict[str, Any]:
         sources = form.get("sources") if form.get("sources") in ("reddit+hn", "hn") else "reddit+hn"

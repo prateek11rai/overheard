@@ -211,7 +211,7 @@ def test_chips_and_badge(client):
         data={"phrases": ["a b", "c d"], "phrases_new": "E F", "sources": "reddit+hn"},
         headers=ask("/products/new"),
     )
-    assert 'value="e f"' in r.text and "3 phrases · 0 searches a day" in r.text
+    assert 'value="e f"' in r.text and "3 phrases · Hacker News only" in r.text
     r = client.post(
         "/api/chips/phrases?remove=0",
         data={"phrases": ["a b", "c d"]},
@@ -465,13 +465,17 @@ def test_remove_demo_data_in_the_web_deletes_demo_digests(client, settings):
     assert not any("demo-" in f.name for f in folder.iterdir())
 
 
-def test_pause_on_settings_refreshes_the_search_plan(client):
-    page = client.get("/settings").text
-    assert "7 phrases" in page
-    pid = re.search(r"/api/products/(\d+)/pause", page).group(1)
-    r = client.post(f"/api/products/{pid}/pause", headers=ask("/settings"))
-    assert 'id="reddit-plan" hx-swap-oob="true"' in r.text
-    assert "2 phrases" in r.text.split('id="reddit-plan"')[1]
+def test_pause_on_settings_refreshes_the_search_plan(tmp_path):
+    s = settings_for(tmp_path, serpapi_api_key="test-key-not-real")
+    _reset_schema()
+    asyncio.run(_prepare(s))
+    with TestClient(create_app(s), base_url="http://127.0.0.1:8000") as c:
+        page = c.get("/settings").text
+        assert "7 phrases" in page
+        pid = re.search(r"/api/products/(\d+)/pause", page).group(1)
+        r = c.post(f"/api/products/{pid}/pause", headers=ask("/settings"))
+        assert 'id="reddit-plan" hx-swap-oob="true"' in r.text
+        assert "2 phrases" in r.text.split('id="reddit-plan"')[1]
 
 
 def test_check_now_on_the_run_log_adds_its_row(client, monkeypatch):
@@ -486,3 +490,32 @@ def test_check_now_on_the_run_log_adds_its_row(client, monkeypatch):
     r = client.post(f"/api/products/{pid}/check", headers=ask("/runs"))
     assert 'id="runs-main" hx-swap-oob="true"' in r.text
     assert "Check · Mealwise" in r.text
+
+
+def test_reddit_off_is_one_plain_line(client):
+    page = client.get("/settings").text
+    plan = page.split('id="reddit-plan"')[1].split("</section>")[0]
+    assert "Reddit off · Hacker News only" in plan
+    assert "SERPAPI_API_KEY" in plan
+    assert 'class="eq"' not in plan and "this month" not in plan
+    bar = client.get("/p/demo-mealwise").text.split("</header>")[0]
+    assert "0 searches" not in bar
+    assert "Hacker News only" in bar or "demo" in bar
+    form = client.get("/products/new").text
+    assert "0 searches" not in form and "Hacker News only" in form
+
+
+def test_search_plan_counts_demo_only_without_real_products(tmp_path):
+    s = settings_for(tmp_path, serpapi_api_key="test-key-not-real")
+    _reset_schema()
+    asyncio.run(_prepare(s))
+    with TestClient(create_app(s), base_url="http://127.0.0.1:8000") as c:
+        plan = c.get("/settings").text.split('id="reddit-plan"')[1].split("</section>")[0]
+        assert "7 phrases" in plan and "demo" in plan
+        c.post(
+            "/products", data={"name": "Tidyshelf", "phrases": ["a b c", "d e f"]}, headers=ORIGIN
+        )
+        plan = c.get("/settings").text.split('id="reddit-plan"')[1].split("</section>")[0]
+        assert "2 phrases" in plan and "· demo" not in plan and "Demo products" not in plan
+        bar = c.get("/p/tidyshelf").text.split("</header>")[0]
+        assert "2 searches" in bar
