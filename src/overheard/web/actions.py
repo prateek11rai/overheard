@@ -194,22 +194,26 @@ def register(app: FastAPI, web: Web) -> None:
         if isinstance(chat, str) and chat:
             for role in (*CHAT_ROLES, "chat"):
                 stored[role] = chat
+            await web._db().set_setting("models", stored)
             message = f"Now using {chat}"
-        reembed = None
-        if isinstance(embed, str) and embed and embed != stored.get("embed"):
-            current = role_models(stored, web.settings.chat_model, web.settings.embed_model)[
-                "embed"
-            ]
-            if embed != current:
-                stored["embed"] = embed
-                reembed = embed
-                message = f"Embeddings now {embed} · re-embedding in the background"
-        await web._db().set_setting("models", stored)
-        if reembed:
+        current = role_models(stored, web.settings.chat_model, web.settings.embed_model)["embed"]
+        if isinstance(embed, str) and embed and embed != current:
             try:
-                await workflows.start_reembed(await web._temporal(), reembed)
+                await workflows.start_reembed(await web._temporal(), embed)
             except Exception:
-                message = f"Embeddings now {reembed} · start Temporal to re-embed"
+                ctx = {**await web._chrome(request), **await web._models_ctx()}
+                return web._fragment(
+                    request,
+                    "_models.html",
+                    ctx,
+                    toast="Temporal isn't running, so embeddings can't switch yet. "
+                    "Start it with uv run overheard start",
+                )
+            await web._db().set_setting("pending_embed", embed)
+            message = (
+                f"Re-embedding with {embed} · it switches when every post is re-embedded "
+                "(see Run log)"
+            )
         ctx = {**await web._chrome(request), **await web._models_ctx()}
         target = form.get("target")
         if target == "setup":

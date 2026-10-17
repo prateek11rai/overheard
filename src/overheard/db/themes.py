@@ -172,6 +172,36 @@ class ThemeQueries(DatabaseCore):
             (model, model),
         )
 
+    async def switch_embedding(self, model: str) -> int:
+        """Rebuild theme centroids for `model` and make it the embedding model, atomically.
+
+        Called as the re-embed's last step, so the morning job keeps using the old model's
+        themes until every post has a vector for the new one.
+
+        Args:
+            model: The new embedding model.
+
+        Returns:
+            Number of themes updated.
+        """
+        async with self.pool.connection() as conn, conn.transaction():
+            cur = await conn.execute(
+                "UPDATE themes t SET centroid = c.centroid, embed_model = %s FROM ("
+                " SELECT p.theme_id, avg(e.embedding) AS centroid FROM posts p"
+                " JOIN post_embeddings e ON e.post_id = p.id AND e.model = %s"
+                " WHERE p.theme_id IS NOT NULL GROUP BY p.theme_id) c WHERE t.id = c.theme_id",
+                (model, model),
+            )
+            updated = cur.rowcount
+            await conn.execute(
+                "INSERT INTO settings (key, value) VALUES ('models', jsonb_build_object('embed', "
+                "%s::text)) ON CONFLICT (key) DO UPDATE SET value = settings.value || "
+                "jsonb_build_object('embed', %s::text), updated_at = now()",
+                (model, model),
+            )
+            await conn.execute("DELETE FROM settings WHERE key = 'pending_embed'")
+        return updated
+
     async def hybrid_search(
         self,
         product_id: int,

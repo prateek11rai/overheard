@@ -452,6 +452,9 @@ class Web:
             chat.insert(0, chat_in_use)
         if embed_in_use not in embed:
             embed.insert(0, embed_in_use)
+        pending = await self._db().get_setting("pending_embed")
+        if pending and pending not in embed:
+            embed.append(pending)
         evals = {r["model"]: r for r in await self._db().latest_evals("checked")}
         recent = {r["model"]: r for r in await self._db().latest_evals("recent")}
         compare_rows = []
@@ -474,7 +477,10 @@ class Web:
         return {
             "found": found,
             "chat_models": [(m, model_status(m, chat_in_use, found)) for m in chat],
-            "embed_models": [(m, model_status(m, embed_in_use, found)) for m in embed],
+            "embed_models": [
+                (m, "re-embedding…" if m == pending else model_status(m, embed_in_use, found))
+                for m in embed
+            ],
             "chat_in_use": chat_in_use,
             "embed_in_use": embed_in_use,
             "compare_rows": compare_rows,

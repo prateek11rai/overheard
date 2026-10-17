@@ -518,11 +518,11 @@ class Activities:
                     done += len(batch)
         except ModelUnavailableError as exc:
             raise ApplicationError(str(exc)) from exc
-        themes = await self.db.recompute_centroids(args.model)
+        themes = await self.db.switch_embedding(args.model)
         await self.db.add_step(
             run_id,
             "reembed",
-            f"Re-embedded {done} posts with {args.model} · {themes} themes updated",
+            f"Re-embedded {done} posts with {args.model} · {themes} themes updated · now in use",
             "ok",
             time.monotonic() - started,
             info.attempt,

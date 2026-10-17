@@ -394,3 +394,23 @@ def test_run_log_shows_a_run_temporal_no_longer_runs_as_failed(client, monkeypat
     assert "running…" not in page
     assert "failed · stopped: completed" in page
     assert re.search(r'<button[^>]*hx-post="/api/runs/now"(?![^>]*disabled)', page)
+
+
+def test_switching_embeddings_waits_for_the_reembed(client, monkeypatch):
+    r = client.post("/api/models/use", data={"embed": "nomic-embed-text"}, headers=ask("/settings"))
+    assert "Temporal isn't running" in trig(r)
+    page = client.get("/settings").text
+    assert 'name="embed" value="embeddinggemma:300m" checked' in page
+
+    fake = FakeTemporal()
+
+    async def connect(_settings):
+        return fake
+
+    monkeypatch.setattr("overheard.workflows.connect", connect)
+    r = client.post("/api/models/use", data={"embed": "nomic-embed-text"}, headers=ask("/settings"))
+    assert "switches when every post is re-embedded" in trig(r)
+    assert any(w.startswith("reembed-") for w in fake.started)
+    page = client.get("/settings").text
+    assert 'name="embed" value="embeddinggemma:300m" checked' in page
+    assert "re-embedding…" in page
