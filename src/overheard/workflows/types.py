@@ -36,6 +36,7 @@ class PlanArgs:
     workflow_id: str
     reddit: bool = True
     product_id: int | None = None
+    trigger: str = "schedule"
 
 
 @dataclass
@@ -92,11 +93,13 @@ class StepArgs:
 
 @dataclass
 class FinishArgs:
-    """How a run ended."""
+    """How a run ended (the row is found, or made, by its workflow id)."""
 
-    run_id: int
+    workflow_id: str
+    kind: str
     status: str
     note: str = ""
+    product_id: int | None = None
 
 
 @dataclass

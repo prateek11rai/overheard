@@ -477,12 +477,13 @@ class Activities:
 
     @activity.defn(name="finish_run")
     async def finish_run(self, args: FinishArgs) -> None:
-        """Mark the run finished.
+        """Mark the run finished (making its row if the run failed before it had one).
 
         Args:
-            args: Run id, status and note.
+            args: Workflow id, kind, status and note.
         """
-        await self.db.finish_run(args.run_id, args.status, args.note)
+        run_id = await self.db.upsert_run(args.workflow_id, args.kind, args.product_id)
+        await self.db.finish_run(run_id, args.status, args.note)
 
     @activity.defn(name="reembed")
     async def reembed(self, args: ModelArgs) -> int:
@@ -523,7 +524,6 @@ class Activities:
             time.monotonic() - started,
             info.attempt,
         )
-        await self.db.finish_run(run_id, "done", args.model)
         return done
 
     @activity.defn(name="compare_recent")
@@ -552,5 +552,4 @@ class Activities:
             result["seconds"],
             info.attempt,
         )
-        await self.db.finish_run(run_id, "done", args.model)
         return result

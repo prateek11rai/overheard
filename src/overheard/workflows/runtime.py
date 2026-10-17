@@ -306,13 +306,17 @@ async def start_run_now(client: Any, db: Database, reddit: bool = True) -> str:
     if any(r.kind in ("morning", "check") for r in await live_runs(client, db)):
         raise AlreadyRunningError("a run is still going")
     wid = f"run-now-{datetime.now(UTC):%Y%m%dT%H%M%S%f}"
-    await db.upsert_run(wid, "morning")
-    await client.start_workflow(
-        MorningBrief.run,
-        MorningInput(reddit=reddit, trigger="manual"),
-        id=wid,
-        task_queue=TASK_QUEUE,
-    )
+    run_id = await db.upsert_run(wid, "morning")
+    try:
+        await client.start_workflow(
+            MorningBrief.run,
+            MorningInput(reddit=reddit, trigger="manual"),
+            id=wid,
+            task_queue=TASK_QUEUE,
+        )
+    except Exception as exc:
+        await db.finish_run(run_id, "failed", f"couldn't start: {type(exc).__name__}")
+        raise
     return wid
 
 
@@ -335,10 +339,14 @@ async def start_check(client: Any, db: Database, product_id: int, slug: str) -> 
         if r.kind == "morning" or (r.kind == "check" and r.product_id == product_id):
             raise AlreadyRunningError("a run is still going")
     wid = f"check-{slug}-{datetime.now(UTC):%Y%m%dT%H%M%S%f}"
-    await db.upsert_run(wid, "check", product_id)
-    await client.start_workflow(
-        ProductScan.run, ScanArgs(product_id), id=wid, task_queue=TASK_QUEUE
-    )
+    run_id = await db.upsert_run(wid, "check", product_id)
+    try:
+        await client.start_workflow(
+            ProductScan.run, ScanArgs(product_id), id=wid, task_queue=TASK_QUEUE
+        )
+    except Exception as exc:
+        await db.finish_run(run_id, "failed", f"couldn't start: {type(exc).__name__}")
+        raise
     return wid
 
 

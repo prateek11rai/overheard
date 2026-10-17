@@ -1,6 +1,7 @@
 import asyncio
 import json
 import re
+import time
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -115,7 +116,29 @@ class Web:
             return 0
         return len(product.phrases)
 
+    async def _temporal_or_none(self) -> Any:
+        if self.state.get("temporal_down_until", 0.0) > time.monotonic():
+            return None
+        try:
+            return await self._temporal()
+        except Exception:
+            self.state["temporal_down_until"] = time.monotonic() + 30
+            return None
+
+    async def _reconcile(self) -> None:
+        """Mark runs Temporal no longer runs as failed (only when some row says running)."""
+        if not await self._db().running_runs():
+            return
+        client = await self._temporal_or_none()
+        if client is None:
+            return
+        try:
+            await workflows.live_runs(client, self._db())
+        except Exception:
+            self.state["temporal_down_until"] = time.monotonic() + 30
+
     async def _chrome(self, request: Request, active: str | None = None) -> dict[str, Any]:
+        await self._reconcile()
         products = await self._db().products()
         counts = await self._db().open_counts()
         active = active if active is not None else self._active_slug(request)

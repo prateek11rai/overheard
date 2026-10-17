@@ -372,3 +372,25 @@ def test_a_second_run_now_is_refused_while_one_runs(client, monkeypatch):
     fake.running.clear()
     r = client.post(f"/api/products/{pid}/check", headers=ask("/runs"))
     assert "Checking" in trig(r) and len(fake.started) == 2
+
+
+def test_run_log_shows_a_run_temporal_no_longer_runs_as_failed(client, monkeypatch):
+    fake = FakeTemporal()
+
+    async def connect(_settings):
+        return fake
+
+    monkeypatch.setattr("overheard.workflows.connect", connect)
+
+    async def stale():
+        async with Database(TEST_DSN, SCHEMA) as db:
+            rid = await db.upsert_run("lost-run", "morning")
+            await db._exec(
+                "UPDATE runs SET started_at = now() - interval '2 hours' WHERE id = %s", (rid,)
+            )
+
+    asyncio.run(stale())
+    page = client.get("/runs").text
+    assert "running…" not in page
+    assert "failed · stopped: completed" in page
+    assert re.search(r'<button[^>]*hx-post="/api/runs/now"(?![^>]*disabled)', page)

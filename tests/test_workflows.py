@@ -7,6 +7,7 @@ from datetime import date
 
 import pytest
 from temporalio import activity
+from temporalio.client import WorkflowFailureError
 from temporalio.exceptions import ApplicationError
 from temporalio.testing import WorkflowEnvironment
 from temporalio.worker import Worker
@@ -78,6 +79,7 @@ class FakeActivities:
         self.steps: list[StepArgs] = []
         self.finished: FinishArgs | None = None
         self.on_search = {}
+        self.fail: dict[str, str] = {}
 
     def all(self):
         return [
@@ -91,10 +93,13 @@ class FakeActivities:
             self.send_digest,
             self.record_step,
             self.finish_run,
+            self.reembed,
         ]
 
     @activity.defn(name="plan_morning")
     async def plan_morning(self, args: PlanArgs) -> PlanResult:
+        if self.fail.get("plan_morning"):
+            raise ApplicationError(self.fail["plan_morning"], non_retryable=True)
         p = ProductPlan(**{**self.plan.__dict__, "run_key": args.workflow_id, "run_id": 1})
         return PlanResult(1, args.workflow_id, [p], "every")
 
@@ -143,6 +148,8 @@ class FakeActivities:
     @activity.defn(name="search_hn")
     async def search_hn(self, args: ScanArgs) -> int:
         await self._step("search_hn")
+        if self.fail.get("search_hn"):
+            raise ApplicationError(self.fail["search_hn"], non_retryable=True)
         return 0
 
     @activity.defn(name="save_posts")
@@ -172,6 +179,10 @@ class FakeActivities:
     @activity.defn(name="finish_run")
     async def finish_run(self, args: FinishArgs) -> None:
         self.finished = args
+
+    @activity.defn(name="reembed")
+    async def reembed(self, args) -> int:
+        raise ApplicationError("model server answered 500", non_retryable=True)
 
 
 def worker(env, fake):
@@ -226,7 +237,7 @@ async def test_check_now_runs_one_product_on_its_own(env):
         )
     assert not result.reddit_used_up
     assert fake.paid == ["a"]
-    assert fake.finished.run_id == 2 and fake.finished.status == "done"
+    assert fake.finished.kind == "check" and fake.finished.status == "done"
 
 
 async def test_a_worker_restart_mid_run_spends_no_extra_search(env):
@@ -303,3 +314,100 @@ async def test_worker_start_creates_the_schedule_and_a_restart_leaves_it(env, db
     assert again.info.last_updated_at == first.info.last_updated_at
     await db.set_setting("morning_time", "07:15")
     assert await ensure_schedule(env.client, db) == "updated"
+
+
+async def test_a_failing_check_closes_its_run_as_failed(env):
+    fake = FakeActivities(["a"])
+    fake.fail["search_hn"] = "Hacker News answered 503"
+    async with worker(env, fake):
+        with pytest.raises(WorkflowFailureError):
+            await env.client.execute_workflow(
+                ProductScan.run, ScanArgs(1), id=f"check-{uuid.uuid4()}", task_queue=QUEUE
+            )
+    assert fake.finished.kind == "check" and fake.finished.status == "failed"
+    assert "Hacker News answered 503" in fake.finished.note
+
+
+async def test_a_morning_run_that_fails_before_planning_is_closed(env):
+    fake = FakeActivities(["a"])
+    fake.fail["plan_morning"] = "database is down"
+    async with worker(env, fake):
+        with pytest.raises(WorkflowFailureError):
+            await env.client.execute_workflow(
+                MorningBrief.run, MorningInput(), id=f"morning-{uuid.uuid4()}", task_queue=QUEUE
+            )
+    assert fake.finished.kind == "morning" and fake.finished.status == "failed"
+    assert "database is down" in fake.finished.note
+
+
+async def test_a_failing_reembed_is_closed(env):
+    from overheard.workflows import ModelArgs, Reembed
+
+    fake = FakeActivities(["a"])
+    async with worker(env, fake):
+        with pytest.raises(WorkflowFailureError):
+            await env.client.execute_workflow(
+                Reembed.run,
+                ModelArgs("nomic-embed-text"),
+                id=f"reembed-{uuid.uuid4()}",
+                task_queue=QUEUE,
+            )
+    assert fake.finished.kind == "reembed" and fake.finished.status == "failed"
+    assert "500" in fake.finished.note
+
+
+async def test_a_failed_start_leaves_no_running_row(db):
+    from overheard.workflows import start_run_now
+
+    class Down:
+        async def start_workflow(self, *args, **kwargs):
+            raise ConnectionError("temporal is gone")
+
+        def get_workflow_handle(self, wid):
+            raise AssertionError("no runs to check")
+
+    with pytest.raises(ConnectionError):
+        await start_run_now(Down(), db)
+    assert await db.running_runs() == []
+    [run] = await db.runs()
+    assert run.status == "failed" and "couldn't start" in run.note
+
+
+async def test_runs_temporal_no_longer_runs_are_marked_failed(db):
+    from datetime import UTC, datetime, timedelta
+    from types import SimpleNamespace
+
+    from temporalio.client import WorkflowExecutionStatus
+
+    from overheard.workflows import live_runs
+
+    old = await db.upsert_run("old-run", "morning")
+    await db.upsert_run("young-run", "morning")
+    live = await db.upsert_run("live-run", "morning")
+    await db._exec(
+        "UPDATE runs SET started_at = %s WHERE id IN (%s, %s)",
+        (datetime.now(UTC) - timedelta(hours=1), old, live),
+    )
+
+    class Fake:
+        def get_workflow_handle(self, wid):
+            status = {
+                "old-run": WorkflowExecutionStatus.TERMINATED,
+                "young-run": None,
+                "live-run": WorkflowExecutionStatus.RUNNING,
+            }[wid]
+
+            class H:
+                async def describe(self):
+                    if status is None:
+                        from temporalio.service import RPCError, RPCStatusCode
+
+                        raise RPCError("not found", RPCStatusCode.NOT_FOUND, b"")
+                    return SimpleNamespace(status=status)
+
+            return H()
+
+    alive = await live_runs(Fake(), db)
+    assert sorted(r.workflow_id for r in alive) == ["live-run", "young-run"]
+    stopped = await db.run(old)
+    assert stopped.status == "failed" and stopped.note == "stopped: terminated"
