@@ -1,10 +1,8 @@
-<!-- TODO(planner): banner docs/img/banner.png (1280×400, from docs/design/mockups/10-readme-banner.html with one real verified post), phase 2 -->
+![overheard: every morning, what people said about the problem your product solves](docs/img/banner.png)
 
 # overheard
 
 Every morning, what people said about the problem your product solves.
-
-<!-- TODO(planner): docs/img/brief.png (real run, phase 2). Review screenshot with demo data: docs/img/review/02-brief.png -->
 
 Overheard reads Reddit (through Google, via SerpApi) and Hacker News for the phrases that describe each of your products, labels what it finds with an open-weight model on your own laptop, and sends you one short email per product: who asked for a tool like yours, which pains keep coming up, and who mentioned you or a competitor. Every label comes with a sentence quoted from the post, and the app checks that the quote is really there.
 
@@ -71,15 +69,17 @@ Want to look around first? `uv run overheard demo load` adds three made-up produ
 
 ## Screens
 
-<!-- TODO(planner): 2×2 grid from real runs (brief, review, themes, settings) and the email. Demo-data versions are in docs/img/review/. -->
+From a live run on 18 Oct 2026, with two well-known products as the topics (Supabase and Obsidian), real Reddit and Hacker News posts, Tiger Cloud and `gemma4:e4b`. The same screens with demo data are in [docs/img/review/](docs/img/review/).
 
 | Brief | Review |
 |---|---|
-| ![Morning brief](docs/img/review/02-brief.png) | ![Review mode](docs/img/review/03-review.png) |
+| ![Morning brief](docs/img/brief.png) | ![Review mode](docs/img/review.png) |
 | **Themes** | **Settings** |
-| ![Themes](docs/img/review/05-themes.png) | ![Settings](docs/img/review/07-settings.png) |
+| ![Themes](docs/img/themes.png) | ![Settings](docs/img/settings.png) |
 
-The morning email: ![Email](docs/img/review/08-email.png)
+The morning email: ![Email](docs/img/email.png)
+
+**What that run did.** Two products, two phrases each. Their first checks looked back a week and found 25 posts: 14 from Reddit for 4 SerpApi searches, and 11 from Hacker News. A later check found one more. Of the 26 posts, 25 got a label whose quote the code found in the post; 1 stayed hidden as unverified. One pain-point theme formed. Labelling took about 2.9 s a post. A Run now later that morning reused all 4 searches from the ledger (0 spent) and emailed both briefs. Killing the worker in the middle of a search and starting it again paid for that search once ([Run log](docs/img/runs-crash-test.png), [Temporal UI](docs/img/temporal-retry.png)).
 
 ## Models
 
@@ -89,16 +89,16 @@ Overheard talks to Ollama, or to any OpenAI-compatible server (LM Studio, llama.
 - **Embeddings:** picking a new embedding model re-embeds your posts in the background.
 - **Compare:** `uv run overheard eval --model gemma4:e4b --model qwen3:4b --markdown` labels the checked set (`data/eval/`) with each model and prints the table below. Settings › Compare models shows the same numbers with a **Use** button, and *Compare on my last 50 posts* tries another model on your real posts without changing any label.
 
-First run on this laptop, 30 synthetic items whose labels are proposed but not yet checked by a person:
+On this laptop, on the checked set of 90 posts: 30 written for the set and 60 Hacker News items fetched live by id. **The labels are proposed, not yet checked by a person** ([data/eval/](data/eval/README.md) says how they were proposed).
 
 | | gemma4:e4b |
 |---|---|
-| right label | 28/30 |
-| quote checks out | 100% |
-| asking-for-a-tool recall | 100% |
-| seconds per post | 2.1 |
+| right label | 76/90 (synthetic 28/30, Hacker News 48/60) |
+| quote checks out | 94% |
+| asking-for-a-tool recall | 8/8 |
+| seconds per post | 2.9 |
 
-<!-- TODO(planner): replace with the phase 2 eval (checked labels, Hacker News items by id, two or more models). -->
+`gemma4:e4b` is the only chat model installed here; another `--model` adds a column.
 
 ## Deploy
 
@@ -123,7 +123,7 @@ The web app listens on 127.0.0.1 by default and refuses any other address unless
 
 <!-- TODO(planner): link to the DEV post. -->
 
-Built for the [Hacktoberfest Open-Source AI Challenge, Week 2: Side Hustle](https://dev.to/challenges/hacktoberfest-week2-2026-10-12). Categories entered: Gemma, Temporal, SerpApi, Tiger Data. Overheard runs on any Postgres with pgvector and uses TimescaleDB's `time_bucket` when present (tested on Tiger in phase 2).
+Built for the [Hacktoberfest Open-Source AI Challenge, Week 2: Side Hustle](https://dev.to/challenges/hacktoberfest-week2-2026-10-12). Categories entered: Gemma, Temporal, SerpApi, Tiger Data. Overheard runs on any Postgres with pgvector and uses TimescaleDB's `time_bucket` when present. The live run used Tiger Cloud (Postgres 18.6, TimescaleDB 2.30.2, pgvector 0.8.7), and `overheard doctor` checks that `time_bucket` answers.
 
 ## After the deadline
 
@@ -135,6 +135,6 @@ Commits after 2026-10-19 06:59 UTC are listed here.
 
 - Colours: [Catppuccin](https://github.com/catppuccin/catppuccin) Mocha (MIT).
 - Fonts: [IBM Plex Sans](https://github.com/IBM/plex) and [JetBrains Mono](https://github.com/JetBrains/JetBrainsMono) (SIL Open Font License), served from the app.
-- [htmx](https://github.com/bigskysoftware/htmx) (0BSD), [Temporal](https://temporal.io), [Tiger Data](https://www.tigerdata.com) (any Postgres with pgvector works; TimescaleDB `time_bucket` when present, tested in phase 2), [SerpApi](https://serpapi.com), [Gemma](https://ai.google.dev/gemma) through [Ollama](https://ollama.com).
+- [htmx](https://github.com/bigskysoftware/htmx) (0BSD), [Temporal](https://temporal.io), [Tiger Data](https://www.tigerdata.com) (any Postgres with pgvector works; TimescaleDB `time_bucket` when present, tested on Tiger Cloud), [SerpApi](https://serpapi.com), [Gemma](https://ai.google.dev/gemma) through [Ollama](https://ollama.com).
 
 MIT licence: see [LICENSE](LICENSE) and [NOTICE](NOTICE).

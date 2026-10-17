@@ -151,9 +151,127 @@ Screenshots refreshed in `docs/img/review/` (all except `07d-settings-two-models
 
 Local Postgres, Temporal and Ollama, plus read-only lookups for #17's pinning: the GitHub API (`gh api`) for action tags → commit SHAs and release dates, and Docker Hub (`auth.docker.io`, `registry-1.docker.io`) and `ghcr.io` (token and manifest requests) for image digests. Nothing pulled, built or downloaded; no SerpApi, Hacker News, Tiger or SMTP.
 
+## Phase 2 · live services
+
+Brief: [design/phase-2.md](design/phase-2.md), 2026-10-18 between 01:45 and about 03:00 IST, with the planner's answers A1, A2 and the email order. Tiger Cloud (Postgres 18.6, TimescaleDB 2.30.2, pgvector 0.8.7) through `DATABASE_URL`, SerpApi, Hacker News, the owner's SMTP, local Ollama (`gemma4:e4b`, `embeddinggemma:300m`) and a fresh Temporal dev server. `uv run pytest`: 185 passed (157 after review 1); ruff check and format clean; leak check clean.
+
+### Fixes 1–5 (each with a test that failed first)
+
+| | Fix | Commit |
+|---|---|---|
+| 1 | Schedule sync survives the create race on a fresh Temporal (`start` and the worker both create; the loser describes and updates). Two concurrent syncs tested with a barrier. | `b80474d` |
+| 2 | `start` shows only Ollama's warnings and errors (`level=WARN/ERROR`, 5xx requests, fatal start errors). | `426c74f` |
+| 3 | Digest files are dated by the schedule's timezone (digest activity, Send a test, demo). | `3b62c7c` |
+| 4 | The ▾ menu flips back when a Check now finishes. First a poller inside the bar (`6efd938`); the live re-add showed `htmx:oobErrorNoTarget #bar` when another response replaced the bar mid-poll, so the poller now sits outside the bar and keys on the running runs. | `23d8b89` |
+| 5 | Products without recipients mail `SMTP_USER`; the form, Setup and Settings say "your own mailbox (SMTP_USER)"; SMTP errors are raised by name and code only (`SMTPRecipientsRefused` quoted the address back into steps, Temporal and logs). | `c19ecdf` |
+
+### Other changes made during the phase (each with a test)
+
+- `cd61703` Hacker News requests go through a process-wide gate: at most one a second (the network rule).
+- `baa96fb` A product's first check looks back a week (Reddit `qdr:w`, Hacker News 7 days); later runs look at the past day. My decision: the spec says "the past day or week", and a new product's first brief was otherwise empty.
+- `8b5cd55` Hacker News matches every word of a phrase, not the exact phrase (Q2). The four phrases had 0 exact hits in a week, 11 all-words hits.
+- `1a1191d` The add form's "first check now · N searches" badge follows the phrases (it stayed "0 searches").
+- `0c206bf` A1: a hand-started Run now emails the whole open brief; scheduled mornings and Check now send what that run found.
+- `3b113c6`, `df7e0ac` Phrases already searched today are free in the plan and never take turns; the Run log says "reused from today".
+- `ca0ebae` Settings names `SERPAPI_MONTHLY_CAP` next to the plan and says how many a day fit ("rotating · 3 a day").
+- `8c4ca66` `doctor` prints "TimescaleDB 2.30.2 · time_bucket works" (or that counts use `date_bin`).
+
+### Every live SerpApi search (9 by the ledger, 5 billed; cap 12)
+
+SerpApi's `this_month_usage` was 5 before the phase and 10 after (`account.json` is free; I read it between steps). The planner's ledger counts 9.
+
+| Time (IST) | Product | Phrase | Window | Posts | Run | Billed |
+|---|---|---|---|---|---|---|
+| 02:04:59 | Supabase (first add) | supabase alternative | week | 1 | check-supabase-…203450 | yes |
+| 02:05:01 | Supabase (first add) | supabase auth | week | 9 | same | yes |
+| 02:07:19 | Obsidian (first add) | obsidian sync | week | 4 | check-obsidian-…203714 | yes |
+| 02:07:28 | Obsidian (first add) | obsidian alternative | week | 0 | same | yes |
+| 02:30:15 | Supabase (re-added, A2) | supabase alternative | week | 1 | check-supabase-…210010 | no¹ |
+| 02:30:17 | Supabase (re-added) | supabase auth | week | 9 | same | no¹ |
+| 02:30:51 | Obsidian (re-added) | obsidian sync | week | 4 | check-obsidian-…210046 | no¹ |
+| 02:30:53 | Obsidian (re-added) | obsidian alternative | week | 0 | same | no¹ |
+| 02:42:29 | Obsidian | obsidian plugins (temporary, step 8) | day | 0 | check-obsidian-…211219 | yes |
+
+¹ SerpApi's counter didn't move: the same queries had run 25 minutes earlier, and SerpApi serves an identical query within an hour from its cache without charge. The ledger still counts them, so the app's caps stay on the safe side.
+
+The Run now (step 7) planned all 4 phrases and reused them all: 0 searches. No scheduled morning ran during the phase.
+
+### Every email (3 of 3, all to the owner's own address)
+
+| Time (IST) | Email | How |
+|---|---|---|
+| 02:36:47 | "Overheard: test email" | `uv run overheard email-test` |
+| about 02:37:40 | Supabase digest, the whole open brief | Run now (A1) |
+| about 02:37:47 | Obsidian digest, the whole open brief | Run now (A1) |
+
+The owner confirmed in the window that all three arrived and look right. Every other digest went to a file: the four first checks (`EMAIL_MODE=file`), and step 8's check (its worker ran with `EMAIL_MODE=file` in its own environment, as agreed; `.env` was edited once, `file` → `smtp`, with a silent `sed`).
+
+### Every run
+
+| Run | Kind | Started (IST) | Searches | New posts | Result |
+|---|---|---|---|---|---|
+| check-supabase-…203450 | first check | 02:04:50 | 2 | 10 | done; product deleted for A2 |
+| check-obsidian-…203714 | first check | 02:07:14 | 2 | 4 | done; product deleted for A2 |
+| check-supabase-…210010 | first check | 02:30:10 | 2 | 13 | done in 65 s |
+| check-obsidian-…210046 | first check | 02:30:46 | 2 | 12 | done in 62 s (1 quote re-checked, 1 unverified) |
+| run-now-…210703 | Run now (morning) | 02:37:03 | 0 | 0 | done in 39 s; 4 searches reused; 2 emails |
+| check-obsidian-…211219 | Check now (step 8) | 02:42:19 | 1 | 1 | done in 87 s; worker killed mid-run, `search_reddit` retried |
+
+### Step 6 · the live data
+
+- Supabase: 13 posts (10 Reddit, 3 Hacker News); Obsidian: 13 (4 Reddit, 9 Hacker News, one from step 8's check).
+- 26 posts: 25 labelled with a quote that `verify_quote()` finds in the post again (re-checked from the database at the end, 0 failures), 1 hidden as unverified. Labels: 20 mentions you, 2 asking for a tool, 1 pain point, 2 off-topic.
+- 1 theme formed ("Difficulty adding new data easily", Supabase). Labelling took 2.9 s a post (73 s for the 25 posts of the first checks).
+- The digest files have the same structure as `08-email.html` (headline, Worth a reply, Pain points, Mentions, Open the brief); `docs/img/email.png`.
+- The Run log and the Temporal UI show every run (`docs/img/runs.png`, `docs/img/temporal-runs.png`).
+
+### Step 8 · ledger crash test, live
+
+Obsidian got a temporary third phrase, `obsidian plugins`. `start` was stopped and its parts were run separately (Ollama, the Temporal dev server with the same arguments, `overheard web`, and `EMAIL_MODE=file overheard worker`), so that only the worker could be killed. A watcher polled `search_ledger` every 50 ms and sent SIGKILL to the worker as soon as the row appeared.
+
+- 02:42:29.713: the paid Reddit search for `obsidian plugins` was saved. 02:42:29.884: worker killed (exit 137) before it reported the activity complete.
+- The restarted worker picked the run up. Temporal timed the first attempt out (40 s) and retried; attempt 2 found the row: "Reddit · obsidian plugins · retried · reused from today · 0 posts" (`docs/img/runs-crash-test.png`, `docs/img/temporal-retry.png`).
+- `search_ledger` has one Reddit row for the phrase (created by the interrupted attempt, used once), and SerpApi's counter went 9 → 10. Paid once.
+- The phrase was removed afterwards; both products have two phrases again.
+
+### Step 9 · state at the end
+
+`overheard doctor`: ✓ Postgres (pgvector 0.8.7), ✓ TimescaleDB 2.30.2 · time_bucket works, ✓ Ollama, ✓ Temporal, ✓ worker, ✓ schedule (morning-brief · daily 07:00 Asia/Kolkata · on), ✓ SerpApi, ✓ Hacker News, ✓ SMTP. `temporal schedule describe --schedule-id morning-brief`: hour 7 minute 0, Asia/Kolkata, overlap Skip, catch-up 12 h, not paused.
+
+### Step 10 · eval and TimescaleDB
+
+- `uv run overheard eval --model gemma4:e4b --markdown` on 90 posts (30 synthetic, 60 Hacker News items fetched live by id; none had been deleted). Labels proposed, not yet checked by a person. Right label 76/90 (synthetic 28/30, Hacker News 48/60), quote checks out 94% (5 Hacker News posts unverified), asking recall 8/8, 2.9 s a post. The result file keeps the UTC date, so it replaced phase 1's `2026-10-17-gemma4-e4b.json` (still in history).
+- The Hacker News items were picked from Algolia searches over the last 60–180 days (16 requests). "Who wants to be hired" comments were left out because they carry personal email addresses, and so were political threads.
+- TimescaleDB recorded check (scratch script, run at 02:21 and again at 02:58): on Tiger, `theme_stats` through `time_bucket` and through the forced `date_bin` fallback gave the same weekly counts for both products. Tests cover `date_bin` and the doctor line on local Postgres, which has no TimescaleDB.
+
+### Steps 11–13 · assets and docs
+
+- `docs/img/banner.png` (1280×400) and `docs/img/devto-cover.png` (1000×420): mockups 10 and 11 filled with "What's the backend database you are using for your apps?" (r/appledevelopers, asking for a tool, quote verified). No username, no address, no product name that isn't ours. Rendered on loopback with the app's own fonts (the mockups' Google Fonts link was dropped, since it isn't on this phase's network list).
+- Screenshots with the live data in `docs/img/` (`docs/img/review/` stays as the demo record). Each was refused if the page text contained anything shaped like an email address; none was.
+- README, RUNBOOK and `docs/devto-post.md` now carry the live numbers. TODOs left for the planner and owner: the post title, the owner's sentence, the cover upload, the video, the agent session, My First User, and the README's link to the DEV post.
+
+### Mistakes, and what I changed
+
+- **`3b113c6` went in with ruff E501.** My commit command piped the check script into `tail`, so a failing check still committed (the same trap as review 1's #14, one level up). Fixed in `df7e0ac`; since then every commit runs only when the check script itself exits 0.
+- The first two first checks were redone (A2) after I found the exact-phrase Hacker News query was too strict; the four repeat searches came from SerpApi's cache.
+- My scratch inspection script was named `inspect.py` and shadowed the standard library; renamed.
+
+### Noticed, not changed
+
+- At 02:04:06 Temporal's SQLite store logged 53 "context deadline exceeded" errors within one second, while Ollama was first loading `gemma4:e4b`; it recovered and every run finished. It didn't happen again, including during the 5-minute eval. Once, Temporal logged a "context canceled" when I left its UI mid-load. The other starts were clean.
+- The ▾ menu's Check now cost says "3 searches" even when some of those phrases were already paid today (it shows the per-check cost, not today's new spend).
+- Digest file names: the date is local now, but the run tag still carries the workflow id's UTC timestamp (`…-upabase20261017t210010…`).
+- The bar poller now polls every 3 s on every page, also when nothing runs (one small query, so the bar can show runs started elsewhere).
+- Hacker News "Who wants to be hired" comments are real posts and can contain their authors' email addresses; they are stored like any post and shown in full in review mode. None of the screenshots shows one.
+- The 07:00 schedule is on, and the app is stopped at the end of the phase. If `overheard start` runs today before 19:00 IST, Temporal catches up the missed 07:00 morning. That run falls on the same day as today's ledger, so it reuses the 4 searches (0 spent) and emails only what it finds new; with nothing new it sends nothing (quiet-morning emails are off). Tomorrow's 07:00 run is a normal morning: up to 3 searches under the cap, plus the emails.
+
+### Network in phase 2
+
+SerpApi: the 9 searches above plus free `account.json` reads. Hacker News (Algolia, at most one request a second through the gate): about 15 for the runs, 10 diagnostics (exact vs all-words matching), 16 to pick eval items, 60 item fetches during the eval. Tiger through `DATABASE_URL`. SMTP: the 3 emails above, to the owner's own address. Local Ollama and Temporal. No PyPI changes (no new dependencies), no Reddit pages, no Google Fonts, no push or publishing.
+
 ## Questions from the agent
 
-Phase 2, asked 2026-10-18 around 02:10 IST. Steps 1–5 are done and committed, as are the parts of step 10 that don't need the live run (the HN items by id, `doctor`'s TimescaleDB line). Step 6's first checks ran live: 4 SerpApi searches, 14 Reddit posts, every quote verifies. No live searches or emails since.
+Phase 2, asked 2026-10-18 around 02:10 IST. **Answered** in [design/phase-2.md](design/phase-2.md) (A1 option 1, A2 option 1, email order); applied as described above. Steps 1–5 are done and committed, as are the parts of step 10 that don't need the live run (the HN items by id, `doctor`'s TimescaleDB line). Step 6's first checks ran live: 4 SerpApi searches, 14 Reddit posts, every quote verifies. No live searches or emails since.
 
 **Q1 (step 7): the Run now email would be empty.** The morning email shows only posts *found in that run* (a phase-1 decision, so posts don't repeat every morning). Step 7's Run now reuses the day's Reddit results from the ledger, so none of its Reddit posts are new to that run. Only Hacker News posts that appeared since the first check would count, and HN had nothing in the past day for these phrases. So both digests would be "quiet", and with quiet-morning emails off (the default), **nothing would be emailed**.
 1. **Recommended:** a hand-started **Run now** emails the full open brief (what the app shows). Scheduled mornings and Check now stay "new in this run". A small change with a test; both emails would have real content.

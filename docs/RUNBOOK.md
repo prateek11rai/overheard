@@ -20,7 +20,7 @@ Then, in the repo:
 cp .env.example .env               # DATABASE_URL=postgresql:///overheard for the local database
 uv sync                            # Python 3.13 from the system; uv never downloads one
 uv run overheard setup             # .data/, migrations (schema "overheard" only), tool checks
-uv run overheard doctor            # ✓ Postgres, Ollama, Temporal, worker, schedule; SerpApi/SMTP "not set yet" is fine
+uv run overheard doctor            # ✓ Postgres, TimescaleDB (or date_bin), Ollama, Temporal, worker, schedule; SerpApi/SMTP "not set yet" is fine
 uv run overheard start             # open http://127.0.0.1:8000; Ctrl-C stops everything
 ```
 
@@ -78,9 +78,9 @@ The morning time and timezone, pause-all, products, recipients and model choices
 ## The morning job
 
 - Schedule `morning-brief`: daily at the chosen time in the chosen timezone, skips a run if the previous one is still going, catches up to 12 hours late. `overheard setup`, every worker start and `overheard start` create it if it's missing and update it only if it differs (a compose deploy gets it from the worker). `temporal schedule describe --schedule-id morning-brief` shows it. The ◷ button and Settings › Time update it; Pause all pauses it.
-- **Run now** starts `MorningBrief` (same as the schedule). **Check now** starts `ProductScan` for one product. The scheduled morning and Check now email the posts found in that run; Run now emails each product's whole open brief, as the app shows it. Both are refused ("Already running") while a morning run, or a check of that product, is still going; the buttons show disabled until it finishes. Runs that Temporal no longer runs are shown as failed. Changing the embedding model starts `Reembed`; *Compare on my last 50 posts* starts `CompareRecent`. All show in the Run log.
-- Search budget: one Reddit search per phrase per morning if phrases × days left in the month fits the searches left minus a 10% reserve (from SerpApi's free `account.json`); otherwise phrases take turns, least recently searched first. A used-up plan is a non-retryable failure that switches that morning to Hacker News only.
-- Never paying twice: a Reddit search is paid once per day (in the schedule's timezone), product and phrase; any run that day (scheduled, Run now, Check now, a retry, a restarted worker or an overlapping run) reuses the saved result. Hacker News is searched live on every run. The 10 % reserve is kept back only for the scheduled run.
+- **Run now** starts `MorningBrief` (same as the schedule). **Check now** starts `ProductScan` for one product. The scheduled morning and Check now email the posts found in that run; Run now emails each product's whole open brief, as the app shows it. Both are refused ("Already running") while a morning run, or a check of that product, is still going; the buttons show disabled until it finishes. The bar checks every 3 s and updates when a run starts or ends, wherever it was started (the schedule, another tab). Runs that Temporal no longer runs are shown as failed. Changing the embedding model starts `Reembed`; *Compare on my last 50 posts* starts `CompareRecent`. All show in the Run log.
+- Search budget: one Reddit search per phrase per morning if phrases × days left in the month fits the searches left minus a 10% reserve (from SerpApi's free `account.json`); otherwise phrases take turns, least recently searched first. Phrases already searched today are free and always planned (the Run log says "reused from today"). `SERPAPI_MONTHLY_CAP` / `SERPAPI_DAILY_CAP` lower the budget further; Settings names the cap. A used-up plan is a non-retryable failure that switches that morning to Hacker News only.
+- Never paying twice: a Reddit search is paid once per day (in the schedule's timezone), product and phrase; any run that day (scheduled, Run now, Check now, a retry, a restarted worker or an overlapping run) reuses the saved result. Hacker News is searched live on every run (every word of the phrase, in any order; at most one request a second). A product's first check looks back a week on both sources; later runs look at the past day. The 10 % reserve is kept back only for the scheduled run.
 - Never emailing twice: `send_digest` claims the (run, product) row in `digest_ledger` before sending and marks it sent after the mail server accepts it (or the file `<date>-<run>-<slug>.html` is written, dated by the morning in the schedule's timezone); a retry or an overlapping attempt doesn't send the same morning email again.
 
 ## Deploy (Docker Compose)
@@ -98,7 +98,7 @@ Not run during the hackathon; `.github/workflows/docker.yml` builds the image on
    ```
 2. `docker compose up -d` starts Postgres + pgvector, the Temporal dev server, Ollama, a one-shot `setup` (migrations), the worker and the web app.
 3. `docker compose exec ollama ollama pull gemma4:e4b` and `... ollama pull embeddinggemma:300m`.
-4. Open http://127.0.0.1:8000 on the host (the port is published on 127.0.0.1 only). For a real server, swap `temporal` for Temporal Cloud and `db` for any managed Postgres with pgvector (Tiger is tested in phase 2), keep the port on localhost and put a private tunnel or an authenticating proxy in front.
+4. Open http://127.0.0.1:8000 on the host (the port is published on 127.0.0.1 only). For a real server, swap `temporal` for Temporal Cloud and `db` for any managed Postgres with pgvector (tested on Tiger Cloud: Postgres 18.6, TimescaleDB 2.30.2, pgvector 0.8.7), keep the port on localhost and put a private tunnel or an authenticating proxy in front.
 
 The image runs as a non-root user and sets `OVERHEARD_HOST=0.0.0.0`, so the web app will not start without `OVERHEARD_PASSWORD`. `GET /healthz` answers without the password, for health checks.
 
