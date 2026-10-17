@@ -128,7 +128,7 @@ It got 28 of the 30 written posts and 48 of the 60 Hacker News items. Five Hacke
 
 ## My Agent Session
 
-<!-- TODO(planner): {% agent_session <id> %} after the planner scrubs and submits the build session and the owner publishes it. -->
+{% agent_session 983 %}
 
 ## Prize Categories
 
