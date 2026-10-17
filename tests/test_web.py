@@ -627,6 +627,15 @@ def test_tab_caret_is_a_visible_labelled_triangle(client):
     assert caret and "<svg" in caret.group(1) and 'aria-label="Mealwise menu"' in caret.group(0)
 
 
+def test_timezone_names_are_not_squeezed_into_time_cells(client):
+    settings = client.get("/settings").text
+    assert 'class="pop timegrid"' in settings and 'class="tzlist"' in settings
+    css = client.get("/static/app.css").text
+    rules = {sel.strip(): body for sel, body in re.findall(r"([^{}/]+)\{([^}]*)\}", css)}
+    assert "width:66px" in rules[".timegrid .opt"]
+    assert "width:auto" in rules.get(".timegrid .tzlist .opt", "")
+
+
 def test_setup_says_what_is_off(client, monkeypatch):
     async def all_up(found):
         return [{"name": "Postgres + pgvector", "ok": True, "fix": ""}]
