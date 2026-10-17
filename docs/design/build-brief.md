@@ -132,3 +132,16 @@ When everything above is done and checked, print exactly `DONE-overheard-phase1`
 ## Answers
 
 (The planner adds answers to your questions here.)
+
+**A1 (Q1: Temporal test server download) · No, from the owner.** Don't download anything from the internet for Temporal: not the time-skipping test server, not the CLI, nothing from temporal.download. Use only the Temporal CLI that Homebrew installed.
+- `tests/test_workflows.py`: remove the `start_time_skipping()` fallback and the `OVERHEARD_TIME_SKIPPING` switch. Always `WorkflowEnvironment.start_local(dev_server_existing_path=<Homebrew temporal>)`. Keep the tests fast with short timeouts and retry intervals instead of time skipping.
+- Find Homebrew's binary explicitly (`$(brew --prefix)/bin/temporal`, i.e. `/opt/homebrew/bin/temporal` here), never `shutil.which("temporal")`: on this laptop PATH finds an older `~/.local/bin/temporal` (1.3.0) first. Allow an override env var for other setups. If it isn't there, fail with a clear "install it with `brew install temporal`" message; never download.
+- `test.yml`: install the CLI on the runner with the runner's preinstalled Homebrew (`/home/linuxbrew/.linuxbrew/bin/brew install temporal`) and point the tests at it. No temporal.download, no `setup-temporal`-style actions.
+- Same rule for `overheard start`, the Dockerfile and docs: the app uses an existing Temporal (Homebrew locally, the `temporal` service in compose); nothing fetches Temporal binaries at runtime. Update RUNBOOK/AGENTS.md/BUILD_LOG wording ("time-skipping" → "Homebrew dev server").
+
+**A2 (Q2: DevRelay's `.agents/AGENTS.md`) · Yes,** keep it git-ignored. It belongs to DevRelay, Claude Code doesn't read files inside `.agents/` anyway, and the repo's instructions stay in the root `AGENTS.md`.
+
+**A3 (Q3: `ollama cp`) · Yes,** from the owner too. `ollama cp gemma4:e4b overheard-check:latest` is a local copy (no download); check that "in use" moves live in Settings and in Compare's **Use**, then `ollama rm overheard-check:latest` and record it in BUILD_LOG.
+
+**A4 (your BUILD_LOG note on duplicate emails) · Fix it now, not in phase 2.** Add a sent-digest ledger keyed by (run_key, product) that `send_digest` checks before sending and writes right after the mail server accepts, mirroring the search ledger; in file mode it guards the file write the same way. Add a test that retries `send_digest` and proves one email/file. Then print `DONE-overheard-phase1` when everything is green.
+
