@@ -2,7 +2,7 @@
 title: "GummySearch deletes everyone's data on December 1. I rebuilt its morning loop on a 4B model on my laptop"
 published: false
 tags: devchallenge, hf26challenge, opensource, python
-cover_image: TODO(planner) upload docs/img/devto-cover.png (1000×420, made from a real post in the live run) to DEV
+cover_image: https://raw.githubusercontent.com/prateek11rai/overheard/main/docs/img/devto-cover.png
 ---
 
 <!--
@@ -32,11 +32,11 @@ Every label carries a sentence quoted from the post, and code checks that the se
 
 ## Demo
 
-<!-- TODO(planner): the video link (docs/demo/overheard-demo.mp4 once the email clip is merged; DEV can't play MP4s from GitHub) -->
+**▶ [Watch the 2-minute demo on GitHub](https://github.com/prateek11rai/overheard#demo)** (the app on a live run, then the morning email in the inbox).
 
 The video is about two minutes of the app on a live run, with two well-known products as the topics (Supabase and Obsidian) and real posts. It shows the morning brief, review mode from the keyboard (D done, S skip, C copy the reply, Undo), themes, the schedule and Check now with the Run log updating, the Temporal UI with a retried search, Settings with the model comparison, adding a product, and the morning email in the inbox.
 
-![The morning brief for Supabase, from the live run](https://raw.githubusercontent.com/prateek11rai/overheard/main/docs/img/brief.png)
+[![The morning brief for Supabase, from the live run. Click to watch the demo](https://raw.githubusercontent.com/prateek11rai/overheard/main/docs/img/brief.png)](https://github.com/prateek11rai/overheard#demo)
 
 ## Code
 
