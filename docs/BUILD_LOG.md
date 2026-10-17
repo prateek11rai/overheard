@@ -20,7 +20,7 @@ Chromium through Playwright, 1440 px wide, against `uv run overheard start` with
 | ✓ | **Add product** | Typing what it does filled 5 phrases from local gemma; Enter added a chip, × removed one, competitor chip added. Start listening → new tab and its brief ("Nothing new about Mealwise since yesterday."), toast "Listening. First check started"; the check ran through Temporal (offline steps) and appeared in the Run log. |
 | ✓ | **Edit** | Changed description and quiet mornings, Save → the page reloads from the server with the saved values and a "Saved" toast. |
 | ✓ | **Delete** | ▾ › Delete… opens a `<dialog>`; confirming removes the tab and goes to the first product. |
-| ✗ | **Model card "in use" moves** / **Use** in Compare | Not shown live: only one chat model and one embedding model are installed, and `ollama pull` is off limits (Q3). Covered by `test_models_use_saves_the_pick` (the checked card moves and persists). |
+| ✓ | **Model card "in use" moves** / **Use** in Compare | With the owner's OK (A3): `ollama cp gemma4:e4b overheard-check:latest` (a local copy, no download). It appeared in Settings; clicking its card moved "in use" to it (toast "Now using overheard-check:latest", still true after reload); **Use** on `gemma4:e4b` in Compare models moved it back (also after reload). Then `ollama rm overheard-check:latest`. Screenshot: `docs/img/review/07d-settings-two-models.png`. |
 | ✓ | **Run now** | Toast "Morning brief started"; a new row shows "running…", polls every 3 s, turns "done" and stops polling. |
 | ✓ | **Check now** | Toast "Checking Shipnote now"; a new "Check · Shipnote" row (a demo product: "not checked"). |
 | ✓ | Review **D / S / C / O / ?** | D: next post, 1 of 6, title (6). S: skipped, toast. C: "Reply copied". O: clicks the thread link (intercepted in the test so nothing left the laptop). ?: opens and closes the shortcut list. Undo from review shows the same post again. |
@@ -34,11 +34,11 @@ CLI, live: `overheard brief` (0 products with demo only; `--reddit off` with `se
 ## Acceptance (phase 1)
 
 1. ✓ Fresh clone (scratch dir): `uv sync --frozen` and `uv run overheard setup` work; leak check clean.
-2. ✓ `uv run ruff check` (docstring rules on), `uv run ruff format --check`, `uv run pytest`: 93 passed.
-3. ✓ `setup` twice: second run applies 0 migrations. `tests/test_migrations.py` snapshots every relation, schema and extension outside `overheard` before and after two migrations: no change.
+2. ✓ `uv run ruff check` (docstring rules on), `uv run ruff format --check`, `uv run pytest`: 98 passed.
+3. ✓ `setup` twice: second run applies 0 migrations (001 and 002 the first time). `tests/test_migrations.py` snapshots every relation, schema and extension outside `overheard` before and after two migrations: no change.
 4. ✓ `start` brings up Temporal, worker, web; `doctor`: ✓ Postgres, Ollama, Temporal, worker, schedule; "not set yet" for SerpApi and SMTP (email shows file mode, because `.env` sets `EMAIL_MODE=file`).
 5. ✓ `demo load` fills every screen; each was compared with its mockup (screenshots in `docs/img/review/`); `demo clear` empties it; `demo load` again works.
-6. ✓ except the model switch (table above).
+6. ✓ every interaction, including the model switch (A3).
 7. ✓ `temporal schedule describe --schedule-id morning-brief` shows time, timezone, 12 h catch-up, and follows the UI.
 8. ✓ No `<select>` or `type="time"`, no `agent-note` on any page (asserted in `test_every_page_renders_with_demo_data`); review mode works from the keyboard.
 9. ✓ `.data/digests/` demo digests render like `08-email.html` (`docs/img/review/08-email*.png`).
@@ -48,7 +48,7 @@ CLI, live: `overheard brief` (0 products with demo only; `--reddit off` with `se
 ## Decisions made without asking, and why
 
 - **htmx 2.0.10, not 4.0.0.** Both are older than 7 days; 4.0 changed swap and event behaviour, and the architecture's examples (`hx-swap-oob`, `HX-Trigger`, `every 3s`) are htmx 2.
-- **Temporal tests on the Homebrew dev server.** `start_time_skipping()` downloads a test server from temporal.download, which isn't on the phase-1 network list (Q1). The tests use `start_local(dev_server_existing_path=/opt/homebrew/bin/temporal)` with 1-second retry backoff (6 s for 5 tests). `OVERHEARD_TIME_SKIPPING=1` switches to the time-skipping server (CI would download it).
+- **Temporal only from Homebrew (A1, the owner's answer).** Nothing Temporal is ever downloaded: no time-skipping test server, no CLI. `settings.temporal_binary()` finds `$(brew --prefix)/bin/temporal` explicitly (never PATH: this laptop has an older `~/.local/bin/temporal` 1.3.0 first on PATH, which my first test version picked up), honours `OVERHEARD_TEMPORAL_BIN`, and fails with "install it with `brew install temporal`". `start`, `setup` and the workflow tests use it; the tests always run `WorkflowEnvironment.start_local(dev_server_existing_path=...)` with 1-second retry backoff (about 6 s for the workflow tests). CI installs the CLI with the runner's Homebrew (`/home/linuxbrew/.linuxbrew/bin/brew install temporal`).
 - **`python-preference = "only-system"` in `[tool.uv]`.** A uv-managed CPython 3.13.3 was picked ahead of Homebrew's 3.13.12; this forces the system one.
 - **`uv_build` as build backend.** `[project.scripts]` needs the project installed; uv_build is Astral's backend, build-time only, not in `uv.lock`.
 - **Extra setting `OVERHEARD_OFFLINE`** (documented in RUNBOOK, not in `.env.example`). Phase 1 must not call Hacker News, but adding a product starts a real check. Offline, searches are skipped and say so in the Run log; the whole Temporal path still runs.
@@ -60,6 +60,7 @@ CLI, live: `overheard brief` (0 products with demo only; `--reddit off` with `se
 - **Weekly buckets:** `time_bucket('7 days', found_at, origin => now())` with TimescaleDB, else `date_bin('7 days', found_at, now())`, i.e. rolling weeks, instead of `date_trunc('week')`, so "this week" doesn't reset every Monday.
 - **Themes order:** growing, then new, then steady (each by growth, then size). This matches the mockup's order; plain growth ratio would put a brand-new theme first.
 - **Run log data:** `runs` has `searches_used`, `new_posts` (stored when a run finishes, live while it runs) and a `demo` flag, because a morning run spans products; demo clear removes demo runs too. `run_steps` are idempotent per step key, so a retried activity updates its row (↻).
+- **Never emailing twice (A4).** Migration `002_digest_ledger.sql` adds `digest_ledger` keyed by (run, product). `mail.deliver_once()` checks it before sending and writes it right after the mail server accepts (or the file is written); quiet mornings with no email leave no record. `tests/test_digest_ledger.py` runs the real `send_digest` activity twice (Temporal `ActivityEnvironment`) in SMTP and file mode and proves one email or file, with the retry logged as "… · not sent again".
 - **Reply drafts** are stored on the post (`reply_draft`), drafted on demand in review mode; demo drafts are written by hand.
 - **Settings › Reddit searches** counts phrases of active products including demo ones, so the demo screen isn't empty. Run now and Check now costs count only products that can really be searched (0 without a key).
 - **Theme threshold 0.62** (cosine, embeddinggemma) is a guess from the model's typical similarities; tune on real posts in phase 2.
@@ -77,10 +78,10 @@ CLI, live: `overheard brief` (0 products with demo only; `--reddit off` with `se
 
 ## Network used in phase 1
 
-PyPI (packages, `uv_build`); GitHub releases for IBM Plex Sans, JetBrains Mono and htmx; local Postgres, Temporal and Ollama. Also, read-only: the GitHub API to read release dates of uv, Temporal CLI, Ollama and pgvector, to pin Docker images at least 7 days old. Nothing else.
+PyPI (packages, `uv_build`); GitHub releases for IBM Plex Sans, JetBrains Mono and htmx; local Postgres, Temporal and Ollama. Nothing Temporal was downloaded (the workflow tests always used a local CLI). Also, read-only: the GitHub API to read release dates of uv, Temporal CLI, Ollama and pgvector, to pin Docker images at least 7 days old. Nothing else.
 
 ## Not done in phase 1 (by design or blocked)
 
 - Live SerpApi, Hacker News, Tiger and SMTP; real runs; banner and cover; final screenshots; the eval with checked labels and Hacker News items by id.
-- SMTP sending is written (STARTTLS/SSL with verification) but untested against a server. If `send_digest` is retried after the server accepted the message, the email can go out twice; phase 2 could record sent digests per run (like the search ledger) before sending.
+- SMTP sending is written (STARTTLS/SSL with verification) but untested against a real server.
 - *Compare on my last 50 posts* and *Re-embed* are wired and tested at the function level but not exercised live (they need a second chat / embedding model).

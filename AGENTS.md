@@ -36,6 +36,7 @@ uv run pytest -q                 # uses the overheard_test database
 - No new dependencies without asking the owner. Exact pins in `pyproject.toml`, public PyPI only, 7-day cooldown (`exclude-newer`).
 - Only touch the database schema `overheard` (or `OVERHEARD_DB_SCHEMA`). Tests use the `overheard_test` database.
 - Every server listens on 127.0.0.1. The web app refuses another host unless `OVERHEARD_PASSWORD` is set.
+- Temporal comes only from Homebrew (`$(brew --prefix)/bin/temporal`, or `OVERHEARD_TEMPORAL_BIN`); never use another `temporal` on PATH and never download Temporal binaries (no time-skipping test server). Workflow tests run on the Homebrew dev server.
 - Post text is untrusted: it goes to the model as data, labels come from a fixed set, quotes are verified, the model gets no tools, and templates escape everything.
 - Code style: Google-style docstrings on public functions, classes and methods (ruff `D` rules); no header comment blocks; a one-line comment only where the code can't say it.
 - Before every commit: `uv run ruff check`, `uv run ruff format --check`, `uv run pytest -q`, and the local leak check. Never `--no-verify`.

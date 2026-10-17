@@ -51,6 +51,7 @@ class Settings(BaseSettings):
     overheard_db_schema: str = "overheard"
     overheard_data_dir: Path = Path(".data")
     overheard_offline: bool = False
+    overheard_temporal_bin: Path | None = None
 
     @model_validator(mode="after")
     def _derive_defaults(self) -> "Settings":
@@ -137,3 +138,63 @@ def local_timezone() -> str:
         except (ZoneInfoNotFoundError, ValueError):
             continue
     return "UTC"
+
+
+BREW_LOCATIONS = (
+    "/opt/homebrew/bin/brew",
+    "/home/linuxbrew/.linuxbrew/bin/brew",
+    "/usr/local/bin/brew",
+)
+HOMEBREW_PREFIXES = ("/opt/homebrew", "/home/linuxbrew/.linuxbrew", "/usr/local")
+
+
+class TemporalNotFoundError(RuntimeError):
+    """Homebrew's Temporal CLI isn't installed (and Overheard never downloads one)."""
+
+
+def temporal_binary(override: str | Path | None = None) -> Path:
+    """Find Homebrew's `temporal` CLI; never one that happens to be on PATH, never a download.
+
+    Args:
+        override: An explicit path (`OVERHEARD_TEMPORAL_BIN`) for other setups.
+
+    Returns:
+        The path to the binary.
+
+    Raises:
+        TemporalNotFoundError: If it isn't installed.
+    """
+    import os
+    import subprocess
+
+    def usable(p: Path) -> bool:
+        return p.is_file() and os.access(p, os.X_OK)
+
+    if override:
+        path = Path(override)
+        if usable(path):
+            return path
+        raise TemporalNotFoundError(
+            f"OVERHEARD_TEMPORAL_BIN is {path}, which isn't an executable. "
+            "Install Temporal with `brew install temporal`."
+        )
+    prefixes: list[str] = []
+    for brew in BREW_LOCATIONS:
+        if usable(Path(brew)):
+            try:
+                out = subprocess.run(
+                    [brew, "--prefix"], capture_output=True, text=True, timeout=15, check=True
+                )
+                prefixes.append(out.stdout.strip())
+            except (OSError, subprocess.SubprocessError):
+                pass
+            break
+    prefixes += [p for p in HOMEBREW_PREFIXES if Path(p, "Cellar").is_dir()]
+    for prefix in dict.fromkeys(prefixes):
+        path = Path(prefix, "bin", "temporal")
+        if usable(path):
+            return path
+    raise TemporalNotFoundError(
+        "Temporal CLI not found. Install it with `brew install temporal` "
+        "(or set OVERHEARD_TEMPORAL_BIN)."
+    )

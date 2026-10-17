@@ -9,12 +9,10 @@ import subprocess
 import sys
 import threading
 import time
-from pathlib import Path
 from urllib.parse import urlsplit
 
-from overheard.settings import Settings, get_settings
+from overheard.settings import Settings, TemporalNotFoundError, get_settings, temporal_binary
 
-TEMPORAL_BIN = "/opt/homebrew/bin/temporal"
 OK, BAD, LATER = "✓", "✗", "·"
 
 
@@ -64,10 +62,11 @@ def _host_port(address: str, default_port: int) -> tuple[str, int]:
     return host or "127.0.0.1", int(port or default_port)
 
 
-def _temporal_bin() -> str | None:
-    if Path(TEMPORAL_BIN).exists():
-        return TEMPORAL_BIN
-    return shutil.which("temporal")
+def _temporal_bin(settings: Settings) -> tuple[str | None, str]:
+    try:
+        return str(temporal_binary(settings.overheard_temporal_bin)), ""
+    except TemporalNotFoundError as exc:
+        return None, str(exc)
 
 
 def _line(mark: str, name: str, detail: str = "") -> None:
@@ -108,8 +107,8 @@ async def _setup(settings: Settings) -> int:
                     _line(OK, f"{kind} model", models[role])
                     if kind == "embedding" and info.dim:
                         await db.ensure_embedding_index(models[role], info.dim)
-    tbin = _temporal_bin()
-    _line(OK if tbin else BAD, "temporal", tbin or "not found: brew install temporal")
+    tbin, why = _temporal_bin(settings)
+    _line(OK if tbin else BAD, "temporal", tbin or why)
     return 0
 
 
@@ -248,11 +247,12 @@ def _start(settings: Settings) -> int:
 
         t_host, t_port = _host_port(settings.temporal_address, 7233)
         if not _port_open(t_host, t_port):
-            tbin = _temporal_bin()
-            if tbin is None or t_host not in ("127.0.0.1", "localhost"):
-                print(
-                    f"No Temporal at {settings.temporal_address}. Install it: brew install temporal"
-                )
+            if t_host not in ("127.0.0.1", "localhost"):
+                print(f"No Temporal at {settings.temporal_address}. Start it or fix the address.")
+                return 1
+            tbin, why = _temporal_bin(settings)
+            if tbin is None:
+                print(why)
                 return 1
             _, ui_port = _host_port(settings.temporal_ui_url, 8233)
             settings.overheard_data_dir.mkdir(parents=True, exist_ok=True)

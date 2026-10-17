@@ -130,5 +130,5 @@ class ProductQueries(DatabaseCore):
         """Delete every product, post, theme, run, ledger row and eval result."""
         await self._exec(
             "TRUNCATE products, posts, post_embeddings, themes, runs, run_steps, search_ledger, "
-            "eval_results RESTART IDENTITY CASCADE"
+            "digest_ledger, eval_results RESTART IDENTITY CASCADE"
         )

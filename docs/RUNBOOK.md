@@ -24,7 +24,7 @@ uv run overheard doctor            # ✓ Postgres, Ollama, Temporal, worker, sch
 uv run overheard start             # open http://127.0.0.1:8000; Ctrl-C stops everything
 ```
 
-`start` checks the model server (and starts `ollama serve` if it is the default local Ollama and isn't running), starts Homebrew's Temporal dev server with its state in `.data/temporal.db` unless one already answers on `TEMPORAL_ADDRESS`, runs the worker and the web app with `[temporal] [worker] [web]` log prefixes, and creates or updates the `morning-brief` schedule.
+`start` checks the model server (and starts `ollama serve` if it is the default local Ollama and isn't running), starts Homebrew's Temporal dev server (`$(brew --prefix)/bin/temporal`, never another `temporal` on PATH, never a download) with its state in `.data/temporal.db` unless one already answers on `TEMPORAL_ADDRESS`, runs the worker and the web app with `[temporal] [worker] [web]` log prefixes, and creates or updates the `morning-brief` schedule.
 
 ### Every command
 
@@ -41,7 +41,7 @@ uv run overheard start             # open http://127.0.0.1:8000; Ctrl-C stops ev
 | `uv run overheard email-test` | send a test email to `SMTP_USER` |
 | `uv run pytest` · `uv run ruff check` · `uv run ruff format --check` | tests and lint |
 
-Tests use the `overheard_test` database (`OVERHEARD_TEST_DATABASE_URL`, default `postgresql:///overheard_test`, with `CREATE EXTENSION vector`) and the Homebrew `temporal` binary for the workflow tests. Set `OVERHEARD_TIME_SKIPPING=1` to use Temporal's time-skipping test server instead (it is downloaded on first use).
+Tests use the `overheard_test` database (`OVERHEARD_TEST_DATABASE_URL`, default `postgresql:///overheard_test`, with `CREATE EXTENSION vector`) and run the workflow tests on the Homebrew Temporal dev server (`$(brew --prefix)/bin/temporal`, or `OVERHEARD_TEMPORAL_BIN`). Nothing is downloaded: if the CLI is missing, the tests fail and say `brew install temporal`.
 
 ## Settings
 
@@ -65,6 +65,7 @@ Environment variables win over `.env`; `.env` is read only when present. Only `D
 | `OVERHEARD_PASSWORD` | empty | any non-local host: every page asks for it (HTTP Basic, any user name) |
 | `OVERHEARD_DB_SCHEMA` | `overheard` | sharing a database |
 | `OVERHEARD_DATA_DIR` | `.data` | moving local files (digests, Temporal state) |
+| `OVERHEARD_TEMPORAL_BIN` | Homebrew's (`$(brew --prefix)/bin/temporal`) | the Temporal CLI lives elsewhere (`start` and the tests use it; nothing is ever downloaded) |
 | `OVERHEARD_OFFLINE` | `false` | developing without network: no SerpApi or Hacker News calls (searches are skipped and say so in the Run log) |
 
 The morning time and timezone, pause-all, products, recipients and model choices are set in the app and stored in the database (table `settings`), not in the environment.
@@ -79,6 +80,7 @@ The morning time and timezone, pause-all, products, recipients and model choices
 - **Run now** starts `MorningBrief` (same as the schedule). **Check now** starts `ProductScan` for one product. Changing the embedding model starts `Reembed`; *Compare on my last 50 posts* starts `CompareRecent`. All show in the Run log.
 - Search budget: one Reddit search per phrase per morning if phrases × days left in the month fits the searches left minus a 10% reserve (from SerpApi's free `account.json`); otherwise phrases take turns, least recently searched first. A used-up plan is a non-retryable failure that switches that morning to Hacker News only.
 - Never paying twice: every search goes through `search_ledger` keyed by run, product, source and phrase; a retry or a restarted worker reuses the saved result.
+- Never emailing twice: `send_digest` checks `digest_ledger` (keyed by run and product) before sending and records the digest right after the mail server accepts it (or the file is written), so a retry doesn't send the same morning email again.
 
 ## Deploy (Docker Compose)
 
@@ -105,6 +107,7 @@ The image runs as a non-root user and sets `OVERHEARD_HOST=0.0.0.0`, so the web 
 |---|---|
 | `doctor`: ✗ Postgres | Check `DATABASE_URL`; run `uv run overheard setup`. "pgvector is not enabled": `CREATE EXTENSION vector` as an admin. |
 | `doctor`: ✗ Ollama | `ollama serve` (or the Ollama app); `ollama pull` the missing model. Another server: set `LLM_BASE_URL`. |
+| `setup`/`start`: "Temporal CLI not found" | `brew install temporal`, or set `OVERHEARD_TEMPORAL_BIN`. Overheard never downloads Temporal. |
 | `doctor`: ✗ Temporal or worker | `uv run overheard start`, or run `temporal server start-dev` and `uv run overheard worker` yourself. |
 | A toast says "Temporal isn't running" | Same as above; the time you picked is saved and the schedule updates when Temporal starts. |
 | Settings shows a model as *unreachable* | The model server is down, or the model was removed. |

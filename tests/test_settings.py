@@ -29,6 +29,7 @@ ENV_NAMES = [
     "OVERHEARD_DB_SCHEMA",
     "OVERHEARD_DATA_DIR",
     "OVERHEARD_OFFLINE",
+    "OVERHEARD_TEMPORAL_BIN",
 ]
 
 
@@ -56,6 +57,8 @@ def test_defaults(clean_env):
     assert s.overheard_data_dir == Path(".data")
     assert s.serpapi_daily_cap is None
     assert s.serpapi_monthly_cap is None
+    assert s.overheard_temporal_bin is None
+    assert s.overheard_offline is False
     assert s.is_local_host
     assert s.is_default_ollama
     with pytest.raises(RuntimeError, match="DATABASE_URL"):
@@ -90,3 +93,18 @@ def test_schema_must_be_an_identifier(clean_env, monkeypatch):
     monkeypatch.setenv("OVERHEARD_DB_SCHEMA", "bad;drop")
     with pytest.raises(ValueError, match="identifier"):
         Settings(_env_file=None)
+
+
+def test_temporal_binary_is_homebrews_never_one_on_path(tmp_path, monkeypatch):
+    from overheard.settings import TemporalNotFoundError, temporal_binary
+
+    fake = tmp_path / "temporal"
+    fake.write_text("#!/bin/sh\necho fake\n")
+    fake.chmod(0o755)
+    monkeypatch.setenv("PATH", f"{tmp_path}:{__import__('os').environ['PATH']}")
+    found = temporal_binary()
+    assert found != fake
+    assert found.parent.name == "bin" and (found.parent.parent / "Cellar").is_dir()
+    assert temporal_binary(fake) == fake
+    with pytest.raises(TemporalNotFoundError, match="brew install temporal"):
+        temporal_binary(tmp_path / "missing")

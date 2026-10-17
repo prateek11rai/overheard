@@ -1,6 +1,5 @@
 import asyncio
 import os
-import shutil
 import uuid
 from collections import defaultdict
 from datetime import date
@@ -13,6 +12,7 @@ from temporalio.worker import Worker
 
 from overheard import pipeline
 from overheard.pipeline import ProductPlan
+from overheard.settings import TemporalNotFoundError, temporal_binary
 from overheard.sources import Post
 from overheard.workflows import (
     WORKFLOWS,
@@ -29,18 +29,18 @@ from overheard.workflows import (
 )
 from tests.conftest import add_product
 
-TEMPORAL = shutil.which("temporal") or "/opt/homebrew/bin/temporal"
 QUEUE = "overheard-test"
 
 
 @pytest.fixture
 async def env():
-    if os.environ.get("OVERHEARD_TIME_SKIPPING") or not os.path.exists(TEMPORAL):
-        e = await WorkflowEnvironment.start_time_skipping()
-    else:
-        e = await WorkflowEnvironment.start_local(
-            dev_server_existing_path=TEMPORAL, dev_server_log_level="error"
-        )
+    try:
+        binary = temporal_binary(os.environ.get("OVERHEARD_TEMPORAL_BIN"))
+    except TemporalNotFoundError as exc:
+        pytest.fail(str(exc))
+    e = await WorkflowEnvironment.start_local(
+        dev_server_existing_path=str(binary), dev_server_log_level="error"
+    )
     try:
         yield e
     finally:

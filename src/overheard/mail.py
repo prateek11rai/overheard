@@ -9,7 +9,7 @@ from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from overheard.db import Product
+from overheard.db import Database, Product
 from overheard.pipeline import Brief, safe_filename
 from overheard.settings import Settings
 
@@ -173,6 +173,56 @@ async def deliver(
         return "No recipient · digest in the app"
     await asyncio.to_thread(_send_smtp, settings, to, subject, html, text)
     return "Email sent"
+
+
+SENT_OUTCOMES = ("Email sent", "Digest saved to .data/digests")
+
+
+def digest_key(run_key: str, product_id: int) -> str:
+    """The idempotency key of one product's digest in one run.
+
+    Args:
+        run_key: The run (workflow id).
+        product_id: Product id.
+
+    Returns:
+        The key.
+    """
+    return f"{run_key}|{product_id}"
+
+
+async def deliver_once(
+    db: Database,
+    settings: Settings,
+    product: Product,
+    brief: Brief,
+    run_key: str,
+    recipients: list[str] | None = None,
+) -> str:
+    """Send (or save) a product's digest at most once per run, like the search ledger.
+
+    The ledger is checked first and written right after the mail server accepted the message
+    (or the file was written), so a retried activity or a restarted worker doesn't send twice.
+
+    Args:
+        db: Database.
+        settings: App settings.
+        product: The product.
+        brief: Its brief.
+        run_key: The run (workflow id).
+        recipients: Override the product's recipients.
+
+    Returns:
+        What happened, for the Run log.
+    """
+    key = digest_key(run_key, product.id)
+    done = await db.digest_get(key)
+    if done is not None:
+        return f"{done['outcome']} · not sent again"
+    outcome = await deliver(settings, product, brief, run_key, recipients)
+    if outcome in SENT_OUTCOMES:
+        await db.digest_save(key, run_key, product.id, outcome)
+    return outcome
 
 
 async def send_test(settings: Settings, recipient: str | None) -> str:

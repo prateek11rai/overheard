@@ -27,6 +27,9 @@ jobs:
           --health-retries 10
     env:
       OVERHEARD_TEST_DATABASE_URL: postgresql://postgres@localhost:5432/overheard_test
+      OVERHEARD_TEMPORAL_BIN: /home/linuxbrew/.linuxbrew/bin/temporal
+      HOMEBREW_NO_AUTO_UPDATE: "1"
+      HOMEBREW_NO_INSTALL_CLEANUP: "1"
     steps:
       - uses: actions/checkout@v4
         with:
@@ -38,6 +41,8 @@ jobs:
         with:
           version: "0.12.3"
           enable-cache: false
+      - name: Install the Temporal CLI with the runner's Homebrew
+        run: /home/linuxbrew/.linuxbrew/bin/brew install temporal
       - name: Enable pgvector in the test database
         run: psql "$OVERHEARD_TEST_DATABASE_URL" -c "CREATE EXTENSION IF NOT EXISTS vector"
       - run: uv sync --frozen

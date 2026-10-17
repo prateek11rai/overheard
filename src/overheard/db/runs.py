@@ -280,6 +280,42 @@ class RunQueries(DatabaseCore):
         )
         return {(r["product_id"], r["phrase"]): r["day"] for r in rows}
 
+    async def digest_get(self, key: str) -> dict | None:
+        """A digest already sent or saved, by its idempotency key.
+
+        Args:
+            key: `run_key|product_id`.
+
+        Returns:
+            The ledger row, or None.
+        """
+        return await self._one(
+            "SELECT idempotency_key, outcome, sent_at FROM digest_ledger "
+            "WHERE idempotency_key = %s",
+            (key,),
+        )
+
+    async def digest_save(self, key: str, run_key: str, product_id: int, outcome: str) -> bool:
+        """Record that a digest was sent or saved.
+
+        Args:
+            key: `run_key|product_id`.
+            run_key: The run (workflow id).
+            product_id: Product id.
+            outcome: What happened, for the Run log.
+
+        Returns:
+            Whether a new row was written.
+        """
+        return (
+            await self._exec(
+                "INSERT INTO digest_ledger (idempotency_key, run_key, product_id, outcome) "
+                "VALUES (%s, %s, %s, %s) ON CONFLICT (idempotency_key) DO NOTHING",
+                (key, run_key, product_id, outcome),
+            )
+            > 0
+        )
+
     # evals
 
     async def save_eval(self, **fields: Any) -> int:

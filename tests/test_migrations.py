@@ -23,7 +23,7 @@ async def test_migrate_twice_only_touches_its_schema():
     _reset_schema()
     before_objs, before_schemas, before_exts = snapshot()
     db = Database(TEST_DSN, SCHEMA)
-    assert await db.migrate() == ["001_init.sql"]
+    assert await db.migrate() == ["001_init.sql", "002_digest_ledger.sql"]
     assert await db.migrate() == []
     after_objs, after_schemas, after_exts = snapshot()
     assert after_objs == before_objs
