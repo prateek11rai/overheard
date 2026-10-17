@@ -82,5 +82,5 @@ PyPI (packages, `uv_build`); GitHub releases for IBM Plex Sans, JetBrains Mono a
 ## Not done in phase 1 (by design or blocked)
 
 - Live SerpApi, Hacker News, Tiger and SMTP; real runs; banner and cover; final screenshots; the eval with checked labels and Hacker News items by id.
-- SMTP sending is written (STARTTLS/SSL with verification) but untested against a server.
+- SMTP sending is written (STARTTLS/SSL with verification) but untested against a server. If `send_digest` is retried after the server accepted the message, the email can go out twice; phase 2 could record sent digests per run (like the search ledger) before sending.
 - *Compare on my last 50 posts* and *Re-embed* are wired and tested at the function level but not exercised live (they need a second chat / embedding model).
