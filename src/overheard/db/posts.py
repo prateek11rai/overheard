@@ -28,7 +28,7 @@ class PostQueries(DatabaseCore):
                 seen += 1
                 cur = await conn.execute(
                     "INSERT INTO posts (product_id, source, url, title, body, community, posted_at,"
-                    " run_id) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
+                    " run_id, is_comment) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)"
                     " ON CONFLICT (product_id, url) DO NOTHING RETURNING id",
                     (
                         product_id,
@@ -39,6 +39,7 @@ class PostQueries(DatabaseCore):
                         p.community,
                         p.posted_at,
                         run_id,
+                        p.is_comment,
                     ),
                 )
                 if await cur.fetchone():

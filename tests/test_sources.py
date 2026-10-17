@@ -144,3 +144,9 @@ async def test_search_hn_asks_for_items_newer_than_since():
     assert params["query"] == '"pantry recipes"'
     assert params["numericFilters"] == f"created_at_i>{int(since.timestamp())}"
     assert params["tags"] == "(story,comment)"
+
+
+def test_comment_flag_survives_the_ledger_round_trip():
+    _, comment = parse_hn(load_fixture("hn_search_by_date.json"))
+    assert Post.from_json(comment.to_json()).is_comment
+    assert Post.from_json({"source": "hn", "url": "u", "title": "t"}).is_comment is False

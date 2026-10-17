@@ -48,6 +48,7 @@ class Item:
     competitor: str | None = None
     synthetic: bool = False
     hn_id: int | None = None
+    is_comment: bool = False
 
 
 @dataclass
@@ -154,6 +155,7 @@ async def fetch_hn_item(client: httpx.AsyncClient, item: Item) -> Item:
     }
     post = sources.parse_hn({"hits": [hit]})[0]
     item.title, item.text, item.community = post.title, post.body, post.community
+    item.is_comment = post.is_comment
     return item
 
 
@@ -176,7 +178,13 @@ async def run_model(
         product = context_product(item.product)
         started = time.monotonic()
         out = await pipeline.label_post(
-            ai, product, item.title, item.text, item.community, model=model
+            ai,
+            product,
+            item.title,
+            item.text,
+            item.community,
+            model=model,
+            is_comment=item.is_comment,
         )
         res.seconds += time.monotonic() - started
         res.items += 1
@@ -383,7 +391,13 @@ async def compare_recent(
             continue
         started = time.monotonic()
         out = await pipeline.label_post(
-            ai, product, post.title, post.body, post.community, model=model
+            ai,
+            product,
+            post.title,
+            post.body,
+            post.community,
+            model=model,
+            is_comment=post.is_comment,
         )
         seconds += time.monotonic() - started
         if out.label == post.label:

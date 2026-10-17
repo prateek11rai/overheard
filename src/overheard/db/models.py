@@ -18,7 +18,7 @@ PRODUCT_COLS = (
 POST_COLS = (
     "p.id, p.product_id, p.source, p.url, p.title, p.body, p.community, p.posted_at, p.found_at, "
     "p.label, p.quote, p.competitor, p.status, p.snoozed_until, p.theme_id, p.reply_draft, "
-    "p.label_attempts"
+    "p.label_attempts, p.is_comment"
 )
 OPEN_FILTER = (
     "p.label IN ('ask', 'pain', 'you', 'rival') "
@@ -78,6 +78,7 @@ class Post:
     theme_id: int | None
     reply_draft: str | None
     label_attempts: int
+    is_comment: bool = False
 
 
 @dataclass

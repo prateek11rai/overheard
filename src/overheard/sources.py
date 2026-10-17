@@ -38,6 +38,7 @@ class Post:
     body: str
     community: str
     posted_at: datetime | None
+    is_comment: bool = False
 
     def to_json(self) -> dict[str, Any]:
         """A JSON-ready dict (for the search ledger).
@@ -67,6 +68,7 @@ class Post:
             body=d.get("body", ""),
             community=d.get("community", ""),
             posted_at=datetime.fromisoformat(posted) if posted else None,
+            is_comment=bool(d.get("is_comment", False)),
         )
 
 
@@ -284,6 +286,7 @@ def parse_hn(payload: dict[str, Any]) -> list[Post]:
                 body=body,
                 community="Hacker News",
                 posted_at=datetime.fromtimestamp(created, UTC) if created else None,
+                is_comment=is_comment,
             )
         )
     return posts

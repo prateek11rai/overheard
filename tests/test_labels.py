@@ -132,3 +132,31 @@ async def test_prompt_injection_with_an_honest_model_gets_a_real_label():
     )
     out = await label(handler, "Quick question", body)
     assert out.label == "pain" and out.attempts == 1
+
+
+async def test_hacker_news_comment_quotes_must_come_from_the_comment():
+    from overheard.sources import parse_hn
+    from tests.conftest import load_fixture
+
+    story, comment = parse_hn(load_fixture("hn_search_by_date.json"))
+    assert not story.is_comment and comment.is_comment
+    title_quote = {"label": "ask", "quote": "How do you plan weekly meals?"}
+    handler = ollama_handler(chat=scripted(title_quote))
+    async with fake_ai(handler) as ai:
+        out = await label_post(
+            ai, PRODUCT, comment.title, comment.body, comment.community, is_comment=True
+        )
+    assert out.label == "unverified"
+    user = json.loads(handler.calls[0]["messages"][1]["content"])
+    assert user["comment"]["text"] == comment.body
+    assert user["comment"]["thread_title"] == comment.title
+    body_quote = {"label": "pain", "quote": "Every inventory app wants me to scan every can."}
+    async with fake_ai(ollama_handler(chat=scripted(body_quote))) as ai:
+        out = await label_post(
+            ai, PRODUCT, comment.title, comment.body, comment.community, is_comment=True
+        )
+    assert out.label == "pain"
+    # A story's title still counts.
+    async with fake_ai(ollama_handler(chat=scripted(title_quote))) as ai:
+        out = await label_post(ai, PRODUCT, story.title, story.body, story.community)
+    assert out.label == "ask"

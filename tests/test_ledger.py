@@ -92,3 +92,19 @@ def test_ledger_key_is_per_day_for_reddit_and_per_run_for_hacker_news():
     assert ledger_key("r1", 1, "reddit", "x", day) != ledger_key(
         "r1", 1, "reddit", "x", date(2026, 10, 19)
     )
+
+
+async def test_saved_posts_keep_the_comment_flag(db):
+    product = await add_product(db)
+    comment = Post(
+        "hn",
+        "https://news.ycombinator.com/item?id=1",
+        "Thread",
+        "My text here.",
+        "Hacker News",
+        None,
+        True,
+    )
+    await db.upsert_posts(product.id, [comment], None)
+    [saved] = await db.unlabelled_posts(product.id)
+    assert saved.is_comment

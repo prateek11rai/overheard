@@ -86,3 +86,12 @@ async def test_hacker_news_items_are_fetched_by_id():
     assert item.title == "Ask HN: How do you plan weekly meals?"
     assert item.text.startswith("Every inventory app wants me to scan every can.")
     assert item.community == "Hacker News"
+
+
+async def test_fetched_hacker_news_comment_is_marked_as_a_comment():
+    def handler(request):
+        return httpx.Response(200, json=load_fixture("hn_item.json"))
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        item = await evals.fetch_hn_item(client, Item("h", "mealwise", "pain", hn_id=41000002))
+    assert item.is_comment

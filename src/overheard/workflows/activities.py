@@ -337,7 +337,12 @@ class Activities:
                 activity.heartbeat(i)
                 try:
                     out = await pipeline.label_post(
-                        ai, product, post.title, post.body, post.community
+                        ai,
+                        product,
+                        post.title,
+                        post.body,
+                        post.community,
+                        is_comment=post.is_comment,
                     )
                 except ModelUnavailableError as exc:
                     raise ApplicationError(str(exc)) from exc

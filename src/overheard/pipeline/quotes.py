@@ -139,17 +139,21 @@ def verify_quote(quote: str | None, text: str) -> bool:
     return bool(quote) and locate_quote(quote or "", text) is not None
 
 
-def post_text(title: str, body: str) -> str:
+def post_text(title: str, body: str, is_comment: bool = False) -> str:
     """The text a label's quote must come from.
 
+    A Hacker News comment's title is its thread's title, which the commenter didn't write,
+    so a comment's quote must come from the comment itself.
+
     Args:
-        title: Post title.
+        title: Post title (for a comment, the thread's title).
         body: Post body or snippet.
+        is_comment: Whether the post is a comment.
 
     Returns:
-        Title and body together.
+        Title and body together, or only the body for a comment.
     """
-    return f"{title}\n{body}".strip()
+    return body.strip() if is_comment else f"{title}\n{body}".strip()
 
 
 def safe_filename(name: str) -> str:

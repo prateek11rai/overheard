@@ -124,7 +124,9 @@ def card_for(post: Post, now: datetime) -> Card:
         before = "…" + before[-CONTEXT_CHARS:].lstrip()
     if len(after) > CONTEXT_CHARS:
         after = after[:CONTEXT_CHARS].rstrip() + "…"
-    checked = bool(post.quote) and verify_quote(post.quote, post_text(post.title, post.body))
+    checked = bool(post.quote) and verify_quote(
+        post.quote, post_text(post.title, post.body, post.is_comment)
+    )
     return Card(
         post=post,
         label_css=post.label or "",
