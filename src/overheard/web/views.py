@@ -339,13 +339,17 @@ class Views(WebCore):
         days = calendar.monthrange(today.year, today.month)[1]
         projected = phrases * days
         plan = budget.plan_searches if budget else None
+        cap = self.settings.serpapi_monthly_cap
+        limit = min(plan, cap) if plan and cap is not None else plan
         return {
             "phrases": phrases,
             "days": days,
             "projected": projected,
             "plan": plan,
+            "cap": cap,
+            "per_day": budget.per_day if budget else 0,
             "fits": budget.fits(phrases) if budget else None,
-            "meter": min(100, round(100 * projected / plan)) if plan else 0,
+            "meter": min(100, round(100 * projected / limit)) if limit else 0,
             "has_key": has_key,
             "demo_only": not real and bool(pool),
         }

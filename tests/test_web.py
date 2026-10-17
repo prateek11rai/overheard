@@ -742,3 +742,24 @@ def test_compare_models_says_the_labels_are_proposed(client):
     asyncio.run(save())
     page = client.get("/settings").text
     assert "Labels proposed, not yet checked by a person · 90 posts" in page
+
+
+def test_the_search_plan_names_the_monthly_cap(tmp_path):
+    s = settings_for(tmp_path, serpapi_api_key="test-key-not-real", serpapi_monthly_cap=60)
+    _reset_schema()
+    asyncio.run(_prepare(s))
+
+    async def account():
+        async with Database(TEST_DSN, SCHEMA) as db:
+            await db.set_setting(
+                "serpapi_account",
+                {"plan_searches": 250, "searches_left": 240, "this_month_usage": 10},
+            )
+
+    asyncio.run(account())
+    with TestClient(create_app(s), base_url="http://127.0.0.1:8000") as c:
+        plan = c.get("/settings").text.split('id="reddit-plan"')[1].split("</div>\n</div>")[0]
+    text = re.sub(r"<[^>]+>", "", plan)
+    assert "Your SerpApi plan: 250 · capped at 60 a month (SERPAPI_MONTHLY_CAP)" in text
+    assert re.search(r"rotating · \d a day", text)
+    assert 'style="width:100%"' in plan
