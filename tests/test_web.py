@@ -693,3 +693,21 @@ def test_send_a_test_says_where_it_went(client, settings, tmp_path):
     with TestClient(create_app(off), base_url="http://127.0.0.1:8000") as c:
         r = c.post("/api/email/test", headers=ask("/settings"))
         assert "Email is off" in json.loads(r.headers["HX-Trigger"])["toast"]["text"]
+
+
+def test_the_first_check_badge_follows_the_phrases(tmp_path):
+    s = settings_for(tmp_path, serpapi_api_key="test-key-not-real")
+    _reset_schema()
+    asyncio.run(_prepare(s))
+    with TestClient(create_app(s), base_url="http://127.0.0.1:8000") as c:
+        assert "first check now · 0 searches" in c.get("/products/new").text
+        data = {"phrases": ["supabase auth"], "phrases_new": "supabase alternative"}
+        r = c.post("/api/chips/phrases", data=data, headers=ask("/products/new"))
+        assert 'id="first-cost" hx-swap-oob="true"' in r.text
+        assert "first check now · 2 searches" in r.text
+        hn = c.post(
+            "/api/chips/phrases", data={**data, "sources": "hn"}, headers=ask("/products/new")
+        )
+        assert "first check now · Hacker News only" in hn.text
+        edit = c.post("/api/chips/phrases", data=data, headers=ask("/products/1/edit"))
+        assert 'id="first-cost"' not in edit.text

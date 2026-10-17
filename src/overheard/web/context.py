@@ -43,6 +43,7 @@ OOB_PAGES = {
     "_reddit_plan.html": lambda path: path == "/settings",
     "_brief_main.html": lambda path: path.startswith("/p/") and path.count("/") == 2,
     "_phrase_badge.html": lambda path: path.startswith("/products/"),
+    "_first_cost.html": lambda path: path == "/products/new",
 }
 
 

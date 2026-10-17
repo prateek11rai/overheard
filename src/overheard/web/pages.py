@@ -87,9 +87,7 @@ def register(app: FastAPI, web: Web) -> None:
         recipient = await web._db().get_setting("default_recipient") or ""
         ctx = {**await web._chrome(request, ""), **web._product_form_ctx(None, recipient)}
         ctx["badge"] = web._phrase_badge([], "reddit+hn")
-        ctx["first_cost"] = (
-            "Hacker News only" if web.settings.serpapi_api_key is None else "0 searches"
-        )
+        ctx["first_cost"] = web._first_cost([], "reddit+hn")
         return web._page(request, "product_form.html", ctx)
 
     @app.get("/products/{product_id}/edit", response_class=HTMLResponse)

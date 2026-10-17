@@ -185,6 +185,13 @@ class Views(WebCore):
         per_day = pipeline.phrase_cost(phrases, True, has_key)
         return f"{words} · {per_day} search{'es' if per_day != 1 else ''} a day"
 
+    def _first_cost(self, phrases: list[str], sources: str) -> str:
+        has_key = self.settings.serpapi_api_key is not None
+        if not has_key or sources != "reddit+hn":
+            return "Hacker News only"
+        n = pipeline.phrase_cost(phrases, True, has_key)
+        return f"{n} search{'' if n == 1 else 'es'}"
+
     def _form_fields(self, form: Any) -> dict[str, Any]:
         sources = form.get("sources") if form.get("sources") in ("reddit+hn", "hn") else "reddit+hn"
         subs_mode = form.get("subs_mode", "all")

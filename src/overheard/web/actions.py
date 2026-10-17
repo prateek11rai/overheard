@@ -322,8 +322,13 @@ def register(app: FastAPI, web: Web) -> None:
         if field == "competitors":
             items = list(dict.fromkeys(i.strip()[:40] for i in items if i.strip()))[:10]
         sources = form.get("sources") if form.get("sources") in ("reddit+hn", "hn") else "reddit+hn"
-        ctx = {"field": field, "items": items, "badge": web._phrase_badge(items, str(sources))}
-        oob = ["_phrase_badge.html"] if field == "phrases" else []
+        ctx = {
+            "field": field,
+            "items": items,
+            "badge": web._phrase_badge(items, str(sources)),
+            "first_cost": web._first_cost(items, str(sources)),
+        }
+        oob = ["_phrase_badge.html", "_first_cost.html"] if field == "phrases" else []
         return web._fragment(request, "_chips.html", ctx, oob=oob)
 
     @app.post("/api/phrases/suggest", response_class=HTMLResponse)
@@ -341,8 +346,14 @@ def register(app: FastAPI, web: Web) -> None:
                 toast = "Suggested phrases · edit them freely"
             except Exception:
                 toast = "Couldn't suggest phrases. Is Ollama running?"
-        ctx = {"field": "phrases", "items": items, "badge": web._phrase_badge(items, str(sources))}
-        return web._fragment(request, "_chips.html", ctx, toast=toast, oob=["_phrase_badge.html"])
+        ctx = {
+            "field": "phrases",
+            "items": items,
+            "badge": web._phrase_badge(items, str(sources)),
+            "first_cost": web._first_cost(items, str(sources)),
+        }
+        oob = ["_phrase_badge.html", "_first_cost.html"]
+        return web._fragment(request, "_chips.html", ctx, toast=toast, oob=oob)
 
     @app.get("/api/export.csv")
     async def export_csv() -> Response:

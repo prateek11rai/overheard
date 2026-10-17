@@ -29,7 +29,7 @@
     </details>
 
     <div class="row" style="margin-top:30px">
-      {% if product %}<button class="btn primary big" type="submit">Save</button><a class="btn" href="/p/{{ product.slug }}">Back to the brief</a>{% else %}<button class="btn primary big" type="submit">Start listening</button><span class="badge">first check now · {{ first_cost }}</span>{% endif %}
+      {% if product %}<button class="btn primary big" type="submit">Save</button><a class="btn" href="/p/{{ product.slug }}">Back to the brief</a>{% else %}<button class="btn primary big" type="submit">Start listening</button>{% include "_first_cost.html" %}{% endif %}
     </div>
   </form>
 {% endblock %}
