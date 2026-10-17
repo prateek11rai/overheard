@@ -1,0 +1,16 @@
+<div id="run-steps"{% if oob %} hx-swap-oob="true"{% endif %}>
+  {% if selected %}
+  {% for g in groups %}
+  <section class="section">
+    <h2>{{ selected.date }}{% if g.name %} · {{ g.name }}{% elif selected.kind %} · {{ selected.kind }}{% endif %}</h2>
+    <div class="block">
+      <ul class="steps">
+        {% for s in g.steps %}<li><span class="{{ 'ok' if s.status == 'ok' else 'warn' if s.status in ('retried', 'warn') else 'bad' }}">{{ '✓' if s.status == 'ok' else '↻' if s.status == 'retried' else '!' if s.status == 'warn' else '✗' }}</span><span>{{ s.text }}</span><span class="src">{{ '%.1fs' % s.seconds if s.seconds < 60 else '%dm %02ds' % (s.seconds // 60, s.seconds % 60) }}</span></li>{% endfor %}
+      </ul>
+    </div>
+  </section>
+  {% else %}
+  <section class="section"><h2>{{ selected.date }}{% if selected.kind %} · {{ selected.kind }}{% endif %}</h2><div class="block"><p class="dim">{{ 'Starting…' if selected.run.status == 'running' else 'Nothing to check: no active products with phrases.' }}</p></div></section>
+  {% endfor %}
+  {% endif %}
+</div>

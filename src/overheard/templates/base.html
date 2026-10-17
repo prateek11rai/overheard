@@ -1,0 +1,20 @@
+{% from "_macros.html" import logo %}<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{% if title_count %}({{ title_count }}) {% endif %}overheard</title>
+<link rel="icon" href="/static/logo.svg" type="image/svg+xml">
+<meta name="htmx-config" content='{"allowEval":false,"allowScriptTags":false,"includeIndicatorStyles":false,"historyCacheSize":0,"selfRequestsOnly":true}'>
+<link rel="stylesheet" href="/static/app.css?v={{ static_version }}">
+<script src="/static/htmx.min.js?v={{ static_version }}" defer></script>
+<script src="/static/app.js?v={{ static_version }}" defer></script>
+</head>
+<body{% block body_attrs %}{% endblock %}>
+{% block bar %}{% include "_bar.html" %}{% endblock %}
+<main class="wrap{% block main_class %}{% endblock %}" id="main"{% block main_attrs %}{% endblock %}{% if done_message %} data-toast="{{ done_message }}"{% endif %}>
+{% block main %}{% endblock %}
+</main>
+<div class="toast" id="toast" role="status" aria-live="polite"><span data-toast-text></span><a class="link small" href="#" data-toast-undo hidden>Undo</a></div>
+</body>
+</html>

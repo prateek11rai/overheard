@@ -1,0 +1,20 @@
+<div id="model-cards" hx-get="/api/models" hx-trigger="every 10s" hx-swap="outerHTML">
+<form hx-post="/api/models/use" hx-trigger="change" hx-target="#models" hx-swap="outerHTML">
+  <div class="set"><div class="k">Chat</div><div>
+    {% for name, status in chat_models %}<label class="card-opt"><input type="radio" name="chat" value="{{ name }}"{% if name == chat_in_use %} checked{% endif %}{% if status == 'unreachable' and name != chat_in_use %} disabled{% endif %}><span class="dot"></span><span><b class="mono">{{ name }}</b></span><span class="badge{{ ' ok' if 'in use' in status else ' bad' if status == 'unreachable' else '' }}">{{ status }}</span></label>{% endfor %}
+    <div style="margin-top:14px;position:relative">
+      <details class="pd"><summary class="link small">＋ Add a model</summary>
+        <div class="pop" style="top:30px;left:0;width:380px">{% if is_ollama %}<b>Run this, it shows up here in a few seconds</b><div class="row" style="margin-top:12px"><span class="badge" style="flex:1" id="pull-chat">ollama pull qwen3:4b</span><button class="btn sm" type="button" data-copy="#pull-chat" data-copied="Copied">Copy</button></div>{% else %}<b>Load it in your model server; it shows up here in a few seconds.</b>{% endif %}</div>
+      </details>
+    </div>
+  </div></div>
+  <div class="set"><div class="k">Embeddings</div><div>
+    {% for name, status in embed_models %}<label class="card-opt"><input type="radio" name="embed" value="{{ name }}"{% if name == embed_in_use %} checked{% endif %}{% if status == 'unreachable' and name != embed_in_use %} disabled{% endif %}><span class="dot"></span><span><b class="mono">{{ name }}</b></span><span class="badge{{ ' ok' if 'in use' in status else ' bad' if status == 'unreachable' else '' }}">{{ status }}</span></label>{% endfor %}
+    <div style="margin-top:14px;position:relative">
+      <details class="pd"><summary class="link small">＋ Add an embedding model</summary>
+        <div class="pop" style="top:30px;left:0;width:380px">{% if is_ollama %}<b>Run this, it shows up here in a few seconds</b><div class="row" style="margin-top:12px"><span class="badge" style="flex:1" id="pull-embed">ollama pull nomic-embed-text</span><button class="btn sm" type="button" data-copy="#pull-embed" data-copied="Copied">Copy</button></div>{% else %}<b>Load it in your model server; it shows up here in a few seconds.</b>{% endif %}</div>
+      </details>
+    </div>
+  </div></div>
+</form>
+</div>

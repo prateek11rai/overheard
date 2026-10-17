@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block main %}
+  <h1>{{ theme.name }}</h1>
+  <p class="sub">{{ product.name }} · {{ posts|length }} post{{ '' if posts|length == 1 else 's' }}</p>
+  <div class="block pain" style="margin-top:30px">
+    {% for p in posts %}<div class="qline" style="margin-top:{{ 0 if loop.first else 12 }}px"><span>“{{ p.quote or p.title }}”</span><a class="src link" href="{{ p.url|safe_url }}" target="_blank" rel="noopener noreferrer">{{ p.community }} ↗</a></div>{% endfor %}
+  </div>
+  <p class="small dim" style="margin-top:30px"><a class="link" href="/p/{{ product.slug }}/themes">← All themes</a></p>
+{% endblock %}

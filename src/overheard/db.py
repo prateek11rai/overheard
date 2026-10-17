@@ -628,6 +628,23 @@ class Database:
         )
         return row["n"] if row else 0
 
+    async def useful_count(self, product_id: int, days: int = 28) -> int:
+        """Posts with a useful label found in the last few days.
+
+        Args:
+            product_id: Product id.
+            days: Window size.
+
+        Returns:
+            The count.
+        """
+        row = await self._one(
+            "SELECT count(*) AS n FROM posts WHERE product_id = %s AND found_at >= now() - "
+            "make_interval(days => %s) AND label IN ('ask', 'pain', 'you', 'rival')",
+            (product_id, days),
+        )
+        return row["n"] if row else 0
+
     async def set_post_status(
         self, post_id: int, status: str, snoozed_until: datetime | None = None
     ) -> Post | None:

@@ -1,0 +1,34 @@
+{% from "_macros.html" import logo %}<header class="bar" id="bar"{% if oob %} hx-swap-oob="true"{% endif %}>
+  <a class="mark" href="/">{{ logo(28) }}overheard</a>
+  <nav class="tabs">
+    {%- for t in tabs %}
+    <div class="tabwrap"><a class="tab{% if t.active %} on{% endif %}{% if t.paused %} paused{% endif %}" href="/p/{{ t.slug }}"><span class="ws">{{ loop.index }}</span>{{ t.name }}{% if t.paused %}<span class="pz">paused</span>{% elif t.count %}<span class="n">{{ t.count }}</span>{% endif %}</a>
+      <details class="pd"><summary class="caret" title="{{ t.name }} menu" aria-label="{{ t.name }} menu">▾</summary>
+        <div class="pop menu" style="top:48px;left:0">
+          <a class="mi" href="/products/{{ t.id }}/edit">Edit what it listens for</a>
+          <button class="mi" type="button" hx-post="/api/products/{{ t.id }}/check" hx-swap="none">Check now <span class="cost">{{ t.cost }} search{{ '' if t.cost == 1 else 'es' }}</span></button>
+          {% if t.paused %}<button class="mi" type="button" hx-post="/api/products/{{ t.id }}/resume" hx-swap="none">Resume</button>{% else %}<button class="mi" type="button" hx-post="/api/products/{{ t.id }}/pause" hx-swap="none">Pause</button>{% endif %}
+          <button class="mi danger" type="button" data-dialog-open="del-{{ t.id }}">Delete…</button>
+        </div>
+      </details>
+      <dialog id="del-{{ t.id }}"><h3>Delete {{ t.name }}?</h3><p class="dim" style="margin-top:10px">Its posts, themes and runs go too. This can't be undone.</p><div class="row" style="margin-top:22px"><button class="btn danger" type="button" hx-delete="/api/products/{{ t.id }}" hx-swap="none">Delete {{ t.name }}</button><button class="btn" type="button" data-dialog-close>Keep it</button></div></dialog>
+    </div>
+    {%- endfor %}
+    <a class="tab" href="/products/new" title="Add a product">＋ Add</a>
+  </nav>
+  <div class="right" style="position:relative">
+    {% if has_demo %}<a class="badge demo" href="/settings#data" title="Remove it in Settings">demo data</a>{% endif %}
+    <details class="pd"><summary class="btn" id="sched-chip">◷ {{ chip }}</summary>
+      <div class="pop" style="top:54px;right:0;width:380px">
+        <h3>Every morning at</h3>
+        <form style="margin-top:14px" hx-post="/api/schedule/time" hx-trigger="change" hx-swap="none">
+          <div class="opts">{% for p in presets %}<label class="opt mono"><input type="radio" name="time" value="{{ p }}"{% if p == morning_time %} checked{% endif %}>{{ p }}</label>{% endfor %}</div>
+        </form>
+        <div class="row between small" style="margin-top:18px"><span class="dim">{% if last_run %}Last run · {{ last_run[0] }} · <span class="{{ 'ok' if last_run[1] in ('done', 'hn_only') else 'bad' if last_run[1] == 'failed' else 'dim' }}">{{ {'done': 'done', 'hn_only': 'done', 'failed': 'failed', 'running': 'running'}[last_run[1]] }}</span>{% else %}No runs yet{% endif %}</span><a class="link" href="/runs">Run log →</a></div>
+        <div class="row" style="margin-top:16px"><button class="btn primary" type="button" hx-post="/api/runs/now" hx-swap="none">Run now</button><span class="badge">{{ run_cost }} search{{ '' if run_cost == 1 else 'es' }}</span></div>
+        <div class="row between" style="margin-top:18px;padding-top:16px;border-top:2px solid var(--s0)"><span>Pause all listening</span><button class="switch{% if paused_all %} on{% endif %}" type="button" role="switch" aria-checked="{{ 'true' if paused_all else 'false' }}" aria-label="Pause all listening" hx-post="/api/schedule/pause-all" hx-swap="none"></button></div>
+      </div>
+    </details>
+    <a class="btn" href="/settings">Settings</a>
+  </div>
+</header>

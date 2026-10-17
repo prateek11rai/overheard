@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% from "_macros.html" import qline %}
+{% block main %}
+  <h1>What keeps coming up</h1>
+  <p class="sub">{{ product.name }} · last 4 weeks · {{ posts_4w }} post{{ '' if posts_4w == 1 else 's' }}</p>
+  {% if themes %}
+  <div class="block pain" style="margin-top:30px">
+    {% for t in themes %}
+    <div class="theme">
+      <div class="row"><h3>{{ t.stat.name }}</h3><span class="trend {{ t.trend }}">{{ t.trend_text }}</span></div>
+      {% for p in t.posts %}<div class="qline"><span>“{{ p.quote or p.title }}”</span><a class="src link" href="{{ p.url|safe_url }}" target="_blank" rel="noopener noreferrer">{{ p.community }} ↗</a></div>{% endfor %}
+      {% if t.stat.total > t.posts|length %}<div style="margin-top:12px"><a class="link small" href="/p/{{ product.slug }}/themes/{{ t.stat.id }}">All {{ t.stat.total }} posts →</a></div>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="block" style="margin-top:30px"><p class="dim">No themes yet. Pain points group into themes as mornings go by.</p></div>
+  {% endif %}
+  <p class="small dim" style="margin-top:30px"><a class="link" href="/p/{{ product.slug }}">← Back to the brief</a></p>
+{% endblock %}

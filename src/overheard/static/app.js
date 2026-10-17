@@ -27,6 +27,16 @@
   }
   window.overheardToast = showToast;
 
+  var main = document.getElementById("main");
+  if (main && main.getAttribute("data-toast")) {
+    showToast({ text: main.getAttribute("data-toast") });
+    if (window.history && window.history.replaceState) {
+      var url = new URL(window.location.href);
+      url.searchParams.delete("done");
+      window.history.replaceState(null, "", url.pathname + url.search + url.hash);
+    }
+  }
+
   document.body.addEventListener("toast", function (e) { showToast(e.detail); });
   document.body.addEventListener("title", function (e) {
     if (e.detail && e.detail.value) document.title = e.detail.value;

@@ -1,0 +1,33 @@
+{% from "_macros.html" import logo %}<div id="setup-main"{% if oob %} hx-swap-oob="true"{% endif %}>
+  <a class="mark" href="/" style="font-size:21px">{{ logo(30) }}overheard</a>
+  <h1 style="margin-top:30px">Three steps and you're listening.</h1>
+
+  <div class="block" style="margin-top:32px">
+    <div class="step {{ 'done' if steps_done[0] else 'now' if now_step == 0 else '' }}"><span class="num">{{ '✓' if steps_done[0] else '1' }}</span><div>
+      <b>Model</b>
+      <form style="margin-top:12px" hx-post="/api/models/use" hx-trigger="change" hx-swap="none">
+        <input type="hidden" name="target" value="setup">
+        {% for m in found.chat %}<label class="card-opt"><input type="radio" name="chat" value="{{ m.name }}"{% if m.name == chat_in_use %} checked{% endif %}><span class="dot"></span><span><b class="mono">{{ m.name }}</b></span><span class="meta">found in {{ 'Ollama' if found.server == 'ollama' else 'your model server' }}</span></label>{% else %}<p class="dim small">No chat model found. Run <span class="mono">ollama pull gemma4:e4b</span>, then reload.</p>{% endfor %}
+      </form>
+    </div></div>
+    <div class="step {{ 'done' if steps_done[1] else 'now' if now_step == 1 else '' }}"><span class="num">{{ '✓' if steps_done[1] else '2' }}</span><div>
+      <b>Morning email</b>
+      <form class="row" style="margin-top:12px" hx-post="/api/email/test" hx-target="#main" hx-swap="innerHTML">
+        <input type="hidden" name="target" value="setup">
+        <input type="email" name="email" value="{{ recipient }}" placeholder="you@yourmail.com" style="flex:1" aria-label="Your email">
+        <button class="btn" type="submit">Send a test</button>
+      </form>
+      {% if not steps_done[1] %}<div style="margin-top:10px"><a class="link small" href="#" hx-post="/api/email/skip" hx-target="#main" hx-swap="innerHTML">Skip for now</a></div>{% endif %}
+    </div></div>
+    <div class="step {{ 'done' if steps_done[2] else 'now' if now_step == 2 else '' }}"><span class="num">{{ '✓' if steps_done[2] else '3' }}</span><div><b>First product</b></div></div>
+  </div>
+
+  <div class="row between" style="margin-top:28px;align-items:flex-start">
+    {% if failing %}
+    <ul class="checks small">{% for c in failing %}<li><span class="bad">✗</span><span><b>{{ c.name }}</b> · {{ c.fix }}</span></li>{% endfor %}</ul>
+    {% else %}
+    <span class="badge ok">✓ all systems ready</span>
+    {% endif %}
+    <a class="btn primary big" href="{{ '/' if has_products else '/products/new' }}">Continue</a>
+  </div>
+</div>

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% from "_macros.html" import radio %}
+{% block main %}
+  {% if product %}<h1>Edit {{ product.name }}</h1><p class="sub">What Overheard listens for.</p>{% else %}<h1>Add a product</h1><p class="sub">Two lines and Overheard knows what to listen for.</p>{% endif %}
+
+  <form class="block" style="margin-top:30px" method="post" action="{{ '/products/%d' % product.id if product else '/products' }}" id="product-form">
+    <label class="f" style="margin-top:0" for="f-name">Name</label>
+    <input type="text" id="f-name" name="name" value="{{ form.name }}" required maxlength="60" placeholder="Mealwise" autocomplete="off">
+    <label class="f" for="f-desc">What it does</label>
+    <textarea id="f-desc" name="description" maxlength="500" placeholder="Plans a week of dinners from what's already in your fridge, leftovers first." hx-post="/api/phrases/suggest" hx-trigger="change" hx-include="#chips-phrases, [name='name'], [name='sources']" hx-target="#chips-phrases" hx-swap="outerHTML">{{ form.description }}</textarea>
+
+    <div class="row between" style="margin:26px 0 10px"><b>Listening for</b>{% include "_phrase_badge.html" %}</div>
+    {% with field="phrases", items=form.phrases %}{% include "_chips.html" %}{% endwith %}
+
+    <label class="f" for="f-mail">Morning email</label>
+    <input type="email" id="f-mail" name="recipients" value="{{ form.recipients }}" placeholder="you@yourmail.com" autocomplete="email">
+
+    <details class="more"{% if product and (form.competitors or form.subreddits or form.sources == 'hn' or form.quiet_day_email) %} open{% endif %}>
+      <summary>More options</summary>
+      <label class="f">Competitors</label>
+      {% with field="competitors", items=form.competitors %}{% include "_chips.html" %}{% endwith %}
+      <label class="f">Subreddits</label>
+      <div class="opts">{{ radio("subs_mode", "all", "All of Reddit", not form.subreddits) }}{{ radio("subs_mode", "only", "Only these…", form.subreddits) }}</div>
+      <div class="subs-only" style="margin-top:12px">{% with field="subreddits", items=form.subreddits %}{% include "_chips.html" %}{% endwith %}</div>
+      <label class="f">Listen on</label>
+      <div class="opts" hx-post="/api/chips/phrases" hx-trigger="change" hx-include="#chips-phrases, [name='sources']" hx-target="#chips-phrases" hx-swap="outerHTML">{{ radio("sources", "reddit+hn", "Reddit + Hacker News", form.sources == 'reddit+hn') }}{{ radio("sources", "hn", "Hacker News only", form.sources == 'hn') }}</div>
+      <label class="f">Quiet mornings</label>
+      <div class="opts">{{ radio("quiet", "send", "Send a short email", form.quiet_day_email) }}{{ radio("quiet", "none", "Don't email", not form.quiet_day_email) }}</div>
+    </details>
+
+    <div class="row" style="margin-top:30px">
+      {% if product %}<button class="btn primary big" type="submit">Save</button><a class="btn" href="/p/{{ product.slug }}">Back to the brief</a>{% else %}<button class="btn primary big" type="submit">Start listening</button><span class="badge">first check now · {{ first_cost }} search{{ '' if first_cost == 1 else 'es' }}</span>{% endif %}
+    </div>
+  </form>
+{% endblock %}

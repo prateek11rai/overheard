@@ -1,0 +1,4 @@
+<div class="opts" id="chips-{{ field }}"{% if oob %} hx-swap-oob="true"{% endif %}>
+  {%- for item in items %}<span class="chip">{{ item }}<input type="hidden" name="{{ field }}" value="{{ item }}"><button class="x" type="button" aria-label="Remove {{ item }}" hx-post="/api/chips/{{ field }}?remove={{ loop.index0 }}" hx-include="#chips-{{ field }}, [name='sources']" hx-target="#chips-{{ field }}" hx-swap="outerHTML">×</button></span>{% endfor -%}
+  <span class="chip add">＋ <input type="text" name="{{ field }}_new" placeholder="Add" aria-label="Add to {{ field }}" hx-post="/api/chips/{{ field }}" hx-trigger="add" hx-include="#chips-{{ field }}, [name='sources']" hx-target="#chips-{{ field }}" hx-swap="outerHTML"></span>
+</div>

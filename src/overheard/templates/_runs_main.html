@@ -1,0 +1,17 @@
+<div id="runs-main"{% if oob %} hx-swap-oob="true"{% endif %}>
+  <div class="row between"><h1>Run log</h1><button class="btn" type="button" hx-post="/api/runs/now" hx-swap="none">Run now</button></div>
+  <p class="sub">One run every morning. If the laptop sleeps, it carries on where it stopped. <a class="link" href="{{ temporal_ui|safe_url }}" target="_blank" rel="noopener noreferrer">Temporal UI ↗</a></p>
+
+  <div class="block" style="margin-top:30px;padding:10px 24px">
+    {% if runs %}
+    <table>
+      <tr><th>Morning</th><th>Result</th><th>Searches</th><th>New</th></tr>
+      {% for v in runs %}{% with selected_id=selected.run.id if selected else None %}{% include "_run_row.html" %}{% endwith %}{% endfor %}
+    </table>
+    {% else %}
+    <p class="dim" style="padding:14px 0">No runs yet. The first one starts at the morning time, or press Run now.</p>
+    {% endif %}
+  </div>
+
+  {% include "_run_steps.html" %}
+</div>

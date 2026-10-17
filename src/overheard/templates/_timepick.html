@@ -1,0 +1,6 @@
+<details class="pd timepick" id="timepick"{% if oob %} hx-swap-oob="true"{% endif %}><summary class="timebtn"><span class="v">{{ morning_time }}</span><span class="tz">{{ tz_name }} <span class="tri">▾</span></span></summary>
+  <div class="pop timegrid">
+    <form hx-post="/api/schedule/time" hx-trigger="change" hx-swap="none"><div class="opts">{% for p in presets %}<label class="opt mono"><input type="radio" name="time" value="{{ p }}"{% if p == morning_time %} checked{% endif %}>{{ p }}</label>{% endfor %}</div></form>
+    <div class="row between" style="margin-top:14px"><span class="small dim">Exact time</span><span class="row" style="gap:8px"><button class="btn sm" type="button" hx-post="/api/schedule/step" hx-vals='{"minutes": "-5"}' hx-swap="none" aria-label="5 minutes earlier">−5</button><span class="mono">{{ morning_time }}</span><button class="btn sm" type="button" hx-post="/api/schedule/step" hx-vals='{"minutes": "5"}' hx-swap="none" aria-label="5 minutes later">+5</button></span></div>
+  </div>
+</details>

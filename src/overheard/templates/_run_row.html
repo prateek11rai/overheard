@@ -1,0 +1,6 @@
+<tr id="run-{{ v.run.id }}" class="{{ 'cur' if selected_id == v.run.id else '' }}"{% if v.run.status == 'running' %} hx-get="/api/runs/{{ v.run.id }}/row{% if selected_id == v.run.id %}?sel={{ v.run.id }}{% endif %}" hx-trigger="every 3s" hx-swap="outerHTML"{% endif %}>
+  <td class="mono"><a class="link" href="/runs?run={{ v.run.id }}">{{ v.date }}</a>{% if v.kind %} <span class="faint">· {{ v.kind }}</span>{% endif %}</td>
+  <td class="{{ v.css }}">{{ v.result }}</td>
+  <td class="mono">{{ v.run.searches_used }}</td>
+  <td class="mono">{{ v.run.new_posts }}</td>
+</tr>

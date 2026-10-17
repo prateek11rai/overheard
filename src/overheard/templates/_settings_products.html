@@ -1,0 +1,11 @@
+<div class="block" style="padding:8px 24px" id="settings-products"{% if oob %} hx-swap-oob="true"{% endif %}>
+  {% if products %}
+  <table>
+    {% for p in products %}
+    <tr><td><b>{{ p.name }}</b>{% if p.demo %} <span class="faint small">demo</span>{% endif %}</td><td class="{{ 'faint' if p.paused else 'ok' }} small">{{ 'paused' if p.paused else 'listening' }}</td><td style="text-align:right">{% if p.paused %}<button class="btn sm" type="button" hx-post="/api/products/{{ p.id }}/resume" hx-swap="none">Resume</button>{% else %}<a class="btn sm" href="/products/{{ p.id }}/edit">Edit</a> <button class="btn sm" type="button" hx-post="/api/products/{{ p.id }}/pause" hx-swap="none">Pause</button>{% endif %}</td></tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <p class="dim" style="padding:14px 0">No products yet. <a class="link" href="/products/new">Add one →</a></p>
+  {% endif %}
+</div>

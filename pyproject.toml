@@ -55,7 +55,7 @@ ignore = ["D100", "D104", "S603", "S607"]
 convention = "google"
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["D", "E501", "S101", "S105", "S106", "S608"]
+"tests/**" = ["D", "E501", "S101", "S104", "S105", "S106", "S608"]
 # SQL there is built only from constant fragments; every value is a bound parameter.
 "src/overheard/db.py" = ["S608"]
 
@@ -64,3 +64,4 @@ testpaths = ["tests"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 addopts = "-p no:cacheprovider"
+filterwarnings = ["ignore::DeprecationWarning:fastapi.testclient", "ignore:Using `httpx` with `starlette.testclient`"]

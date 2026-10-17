@@ -26,6 +26,7 @@ LABEL_TEXT = {
 RESERVE = 0.10
 THEME_THRESHOLD = 0.62
 MIN_QUOTE_CHARS = 8
+CONTEXT_CHARS = 280
 
 _TRANSLATE = str.maketrans(
     {
@@ -816,6 +817,10 @@ def card_for(post: Post, now: datetime) -> Card:
         before, mark, after = text[: span[0]], text[span[0] : span[1]], text[span[1] :]
     else:
         before, mark, after = text, "", ""
+    if len(before) > CONTEXT_CHARS:
+        before = "…" + before[-CONTEXT_CHARS:].lstrip()
+    if len(after) > CONTEXT_CHARS:
+        after = after[:CONTEXT_CHARS].rstrip() + "…"
     checked = bool(post.quote) and verify_quote(post.quote, post_text(post.title, post.body))
     return Card(
         post=post,
@@ -985,3 +990,15 @@ async def brief_for(
         status=status,
         order=[c.post.id for c in ordered],
     )
+
+
+def safe_filename(name: str) -> str:
+    """A file-name-safe version of a slug.
+
+    Args:
+        name: Any text.
+
+    Returns:
+        Letters, digits and dashes only.
+    """
+    return re.sub(r"[^a-z0-9-]+", "-", name.lower()).strip("-") or "digest"

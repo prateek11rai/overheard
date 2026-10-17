@@ -1,0 +1,10 @@
+<div class="block" id="models">
+  {% include "_model_cards.html" %}
+  <details class="more"><summary>Compare models</summary>
+    <table style="margin-top:12px"><tr><th>Model</th><th>Right label</th><th>Quote checks out</th><th>Per post</th><th></th></tr>
+      {% for r in compare_rows %}<tr><td class="mono">{{ r.model }}</td><td>{{ r.right }}</td><td>{{ r.quote }}</td><td>{{ r.per_post }}</td><td>{% if r.in_use %}<span class="small dim">in use</span>{% elif r.installed %}<button class="btn sm" type="button" hx-post="/api/models/use" hx-vals='{"chat": {{ r.model|tojson }}}' hx-target="#models" hx-swap="outerHTML">Use</button>{% endif %}</td></tr>{% endfor %}
+    </table>
+    <div class="row" style="margin-top:14px">{% if compare_next %}<button class="btn sm" type="button" hx-post="/api/models/compare" hx-swap="none">Compare on my last 50 posts</button>{% else %}<span class="small dim">Add a second chat model to compare on your last 50 posts.</span>{% endif %}</div>
+    {% for r in compare_rows %}{% if r.recent %}<p class="small dim" style="margin-top:10px">{{ r.model }} agreed on {{ r.recent.right_label }} of {{ r.recent.items }} of your last posts.</p>{% endif %}{% endfor %}
+  </details>
+</div>
