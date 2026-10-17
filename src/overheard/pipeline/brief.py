@@ -26,6 +26,9 @@ class Card:
     mark: str
     after: str
     checked: bool
+    title_before: str = ""
+    title_mark: str = ""
+    title_after: str = ""
 
 
 @dataclass
@@ -108,6 +111,8 @@ def label_text(post: Post) -> str:
 def card_for(post: Post, now: datetime) -> Card:
     """Build the card for one post, with the checked quote highlighted.
 
+    The quote is highlighted where it was found: in the body, or else in the title.
+
     Args:
         post: The post.
         now: Now (for its age).
@@ -115,12 +120,20 @@ def card_for(post: Post, now: datetime) -> Card:
     Returns:
         The card.
     """
-    text = post.body or post.title
-    span = locate_quote(post.quote or "", text) if post.quote else None
+    text = post.body or ""
+    span = locate_quote(post.quote, text) if post.quote and text else None
     if span:
         before, mark, after = text[: span[0]], text[span[0] : span[1]], text[span[1] :]
     else:
         before, mark, after = text, "", ""
+    title_before, title_mark, title_after = post.title, "", ""
+    # A comment's title is its thread's, which the commenter didn't write.
+    if post.quote and span is None and not post.is_comment:
+        tspan = locate_quote(post.quote, post.title)
+        if tspan:
+            title_before = post.title[: tspan[0]]
+            title_mark = post.title[tspan[0] : tspan[1]]
+            title_after = post.title[tspan[1] :]
     if len(before) > CONTEXT_CHARS:
         before = "…" + before[-CONTEXT_CHARS:].lstrip()
     if len(after) > CONTEXT_CHARS:
@@ -137,6 +150,9 @@ def card_for(post: Post, now: datetime) -> Card:
         mark=mark,
         after=after,
         checked=checked,
+        title_before=title_before,
+        title_mark=title_mark,
+        title_after=title_after,
     )
 
 

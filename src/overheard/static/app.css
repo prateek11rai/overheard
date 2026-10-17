@@ -64,7 +64,7 @@ a{color:inherit}
 /* posts */
 .post .t{display:block;font-size:18px;font-weight:500;margin-top:10px;line-height:1.4}
 .quote{margin-top:14px;padding-left:14px;border-left:3px solid var(--s1);color:var(--sub1)}
-.quote mark{background:color-mix(in srgb,var(--mauve) 25%,transparent);color:var(--text);padding:0 3px}
+.quote mark,.title mark{background:color-mix(in srgb,var(--mauve) 25%,transparent);color:var(--text);padding:0 3px}
 .checked{font:12.5px var(--mono);color:var(--green);margin-top:10px}
 .acts{display:flex;gap:10px;margin-top:18px}
 .theme+.theme{border-top:2px solid var(--s0);margin-top:20px;padding-top:20px}

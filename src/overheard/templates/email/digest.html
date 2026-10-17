@@ -6,7 +6,7 @@
 {% if brief.worth_a_reply %}
 <h3 style="margin:28px 0 0;font-size:17px;color:#cdd6f4;">Worth a reply</h3>
 {% for c in brief.worth_a_reply %}
-<p style="margin:{{ 10 if loop.first else 14 }}px 0 0;font-size:16px;line-height:1.45;"><a href="{{ c.post.url|safe_url }}" style="color:#cdd6f4;text-decoration:underline;text-decoration-color:#585b70;">{{ c.post.title }}</a> <span style="color:#cba6f7;">&#8599;</span><br>{{ src(c.post.community, c.age) }}</p>
+<p style="margin:{{ 10 if loop.first else 14 }}px 0 0;font-size:16px;line-height:1.45;"><a href="{{ c.post.url|safe_url }}" style="color:#cdd6f4;text-decoration:underline;text-decoration-color:#585b70;">{{ c.title_before }}{% if c.title_mark %}<span style="background-color:#494060;color:#cdd6f4;padding:0 3px;">{{ c.title_mark }}</span>{{ c.title_after }}{% endif %}</a> <span style="color:#cba6f7;">&#8599;</span><br>{{ src(c.post.community, c.age) }}</p>
 {% endfor %}
 {% endif %}
 {% if brief.pain_points %}

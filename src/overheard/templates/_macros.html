@@ -9,8 +9,8 @@
 {% macro post_card(c, product, pos=None) -%}
 <article class="block {{ block_css(c.label_css) }} post" data-post="{{ c.post.id }}" id="post-{{ c.post.id }}">
   <div class="row between"><span class="lbl {{ c.label_css }}">{{ c.label_text }}</span><span class="src">{{ c.post.community }}{% if c.age %} · {{ c.age }}{% endif %}</span></div>
-  <a class="title t" href="{{ c.post.url|safe_url }}" target="_blank" rel="noopener noreferrer">{{ c.post.title }}<span class="ext">↗</span></a>
-  <div class="quote">{{ c.before }}{% if c.mark %}<mark>{{ c.mark }}</mark>{% endif %}{{ c.after }}</div>
+  <a class="title t" href="{{ c.post.url|safe_url }}" target="_blank" rel="noopener noreferrer">{{ c.title_before }}{% if c.title_mark %}<mark>{{ c.title_mark }}</mark>{{ c.title_after }}{% endif %}<span class="ext">↗</span></a>
+  {% if c.before or c.mark or c.after %}<div class="quote">{{ c.before }}{% if c.mark %}<mark>{{ c.mark }}</mark>{% endif %}{{ c.after }}</div>{% endif %}
   {% if c.checked %}<div class="checked">✓ quote checked</div>{% endif %}
   <div class="acts"><a class="btn sm" href="/p/{{ product.slug }}/review?post={{ c.post.id }}">Draft a reply</a><button class="btn sm" type="button" hx-post="/api/posts/{{ c.post.id }}/skip" hx-target="#main" hx-swap="innerHTML">Skip</button><button class="btn sm" type="button" hx-post="/api/posts/{{ c.post.id }}/done" hx-target="#main" hx-swap="innerHTML">Done</button></div>
 </article>

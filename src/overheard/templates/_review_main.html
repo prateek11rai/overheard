@@ -7,8 +7,8 @@
   {% set p = card.post %}
   <article class="block {{ block_css(card.label_css) }} post" style="margin-top:30px;padding:30px 32px">
     <div class="row between"><span class="lbl {{ card.label_css }}">{{ card.label_text }}</span><span class="src">{{ p.community }}{% if card.age %} · {{ card.age }}{% endif %}</span></div>
-    <a class="title t" href="{{ p.url|safe_url }}" target="_blank" rel="noopener noreferrer" style="font-size:23px" data-key="o">{{ p.title }}<span class="ext">↗</span></a>
-    <div class="quote" style="font-size:18px">{{ card.before }}{% if card.mark %}<mark>{{ card.mark }}</mark>{% endif %}{{ card.after }}</div>
+    <a class="title t" href="{{ p.url|safe_url }}" target="_blank" rel="noopener noreferrer" style="font-size:23px" data-key="o">{{ card.title_before }}{% if card.title_mark %}<mark>{{ card.title_mark }}</mark>{{ card.title_after }}{% endif %}<span class="ext">↗</span></a>
+    {% if card.before or card.mark or card.after %}<div class="quote" style="font-size:18px">{{ card.before }}{% if card.mark %}<mark>{{ card.mark }}</mark>{% endif %}{{ card.after }}</div>{% endif %}
     <div class="checked">{% if card.checked %}✓ quote checked · {% endif %}open the thread before you reply</div>
     <div class="reply">
       <div class="row between"><b>Your reply</b><span class="src">drafted on this laptop · never posted</span></div>
