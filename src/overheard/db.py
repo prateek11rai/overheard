@@ -858,6 +858,58 @@ class Database:
             (model, model),
         )
 
+    async def hybrid_search(
+        self,
+        product_id: int,
+        text: str,
+        vector: Sequence[float] | None,
+        model: str,
+        limit: int = 20,
+        k: int = 60,
+    ) -> list[tuple[Post, float]]:
+        """Search a product's posts by words and meaning (reciprocal rank fusion).
+
+        Full-text rank (`websearch_to_tsquery` on title and body) and vector rank (cosine
+        distance to `vector` for `model`) are merged with RRF: score = sum of 1 / (k + rank).
+
+        Args:
+            product_id: Product id.
+            text: What to look for, in words.
+            vector: Its embedding, or None for full-text only.
+            model: Embedding model of `vector`.
+            limit: Most posts to return.
+            k: RRF constant.
+
+        Returns:
+            (post, score) pairs, best first.
+        """
+        rows = await self._all(
+            "WITH q AS (SELECT websearch_to_tsquery('english', %s) AS q), "
+            "ft AS (SELECT p.id, row_number() OVER (ORDER BY ts_rank(p.search, q.q) DESC) AS r "
+            "  FROM posts p, q WHERE p.product_id = %s AND p.search @@ q.q ORDER BY r LIMIT 100), "
+            "vec AS (SELECT p.id, row_number() OVER (ORDER BY e.embedding <=> %s::vector) AS r "
+            "  FROM posts p JOIN post_embeddings e ON e.post_id = p.id AND e.model = %s "
+            "  WHERE p.product_id = %s AND %s::boolean ORDER BY r LIMIT 100) "
+            "SELECT id, sum(1.0 / (%s + r)) AS score FROM (SELECT * FROM ft UNION ALL "
+            "SELECT * FROM vec) x GROUP BY id ORDER BY score DESC, id LIMIT %s",
+            (
+                text,
+                product_id,
+                _vec(vector) if vector is not None else None,
+                model,
+                product_id,
+                vector is not None,
+                k,
+                limit,
+            ),
+        )
+        out = []
+        for r in rows:
+            post = await self.post(r["id"])
+            if post is not None:
+                out.append((post, float(r["score"])))
+        return out
+
     async def theme_stats(self, product_id: int, weeks: int = 8) -> list[ThemeStat]:
         """Themes of a product with weekly post counts (week 0 is the last 7 days).
 
