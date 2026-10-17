@@ -6,6 +6,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
+from overheard import pipeline
 from overheard.db import Database
 from overheard.settings import Settings, get_settings
 from overheard.web import actions, pages
@@ -33,6 +34,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         raise RuntimeError("Set OVERHEARD_PASSWORD before listening beyond 127.0.0.1")
     templates = Jinja2Templates(directory=TEMPLATES_DIR)
     templates.env.filters["safe_url"] = safe_url
+    templates.env.globals["label_name"] = pipeline.label_text
     digest = hashlib.sha256()
     for name in ("app.css", "app.js", "htmx.min.js"):
         digest.update((STATIC_DIR / name).read_bytes())

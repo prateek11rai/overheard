@@ -25,13 +25,18 @@ class Views(WebCore):
         themes = []
         if brief.total == 0:
             themes = (await self._themes_ctx(product))["themes"][:3]
+        show = request.query_params.get("show") or ""
+        current = request.headers.get("hx-current-url") or ""
+        zone = ZoneInfo(await self._tz())
+        midnight = datetime.now(zone).replace(hour=0, minute=0, second=0, microsecond=0)
         return {
             **ctx,
             "product": product,
             "brief": brief,
-            "show_hidden": request.query_params.get("show") == "hidden"
-            or "show=hidden" in (request.headers.get("hx-current-url") or ""),
+            "show_hidden": show == "hidden" or "show=hidden" in current,
+            "show_done": show == "done" or "show=done" in current,
             "hidden_posts": await self._db().hidden_posts(product.id),
+            "done_posts": await self._db().done_since(product.id, midnight),
             "quiet_themes": themes,
         }
 

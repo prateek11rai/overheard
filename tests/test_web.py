@@ -588,3 +588,17 @@ def test_undo_is_offered_only_where_it_reverses_something(client, monkeypatch):
     assert json.loads(r.headers["HX-Trigger"])["toast"]["undo"] == f"/api/posts/{post}/undo"
     r = client.post(f"/api/posts/{post}/undo", headers=ask("/p/demo-mealwise"))
     assert "undo" not in json.loads(r.headers["HX-Trigger"])["toast"]
+
+
+def test_done_posts_can_be_found_and_undone_later(client):
+    brief = client.get("/p/demo-mealwise").text
+    assert "Show done" not in brief
+    post = re.search(r'data-post="(\d+)"', brief).group(1)
+    client.post(f"/api/posts/{post}/done", headers=ask("/p/demo-mealwise"))
+    brief = client.get("/p/demo-mealwise").text
+    assert "Show done (1)" in brief
+    shown = client.get("/p/demo-mealwise?show=done").text
+    assert "Done today" in shown
+    assert f'hx-post="/api/posts/{post}/undo"' in shown
+    r = client.post(f"/api/posts/{post}/undo", headers=ask("/p/demo-mealwise?show=done"))
+    assert f'data-post="{post}"' in r.text and "Show done (1)" not in r.text

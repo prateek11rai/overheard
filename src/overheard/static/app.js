@@ -22,8 +22,19 @@
       undo.removeAttribute("data-url");
     }
     t.classList.add("show");
+    t.setAttribute("data-ms", detail && detail.undo ? "8000" : "5000");
+    armToast(t);
+  }
+
+  function armToast(t) {
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () { t.classList.remove("show"); }, 6000);
+    toastTimer = setTimeout(function () { t.classList.remove("show"); }, Number(t.getAttribute("data-ms") || 5000));
+  }
+
+  var toastEl = document.getElementById("toast");
+  if (toastEl) {
+    toastEl.addEventListener("mouseenter", function () { clearTimeout(toastTimer); });
+    toastEl.addEventListener("mouseleave", function () { if (toastEl.classList.contains("show")) armToast(toastEl); });
   }
   window.overheardToast = showToast;
 

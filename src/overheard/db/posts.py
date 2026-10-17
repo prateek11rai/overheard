@@ -204,10 +204,28 @@ class PostQueries(DatabaseCore):
             The updated post, or None.
         """
         await self._exec(
-            "UPDATE posts SET status = %s, snoozed_until = %s WHERE id = %s",
-            (status, snoozed_until, post_id),
+            "UPDATE posts SET status = %s, snoozed_until = %s, "
+            "done_at = CASE WHEN %s = 'done' THEN now() ELSE NULL END WHERE id = %s",
+            (status, snoozed_until, status, post_id),
         )
         return await self.post(post_id)
+
+    async def done_since(self, product_id: int, since: datetime) -> list[Post]:
+        """Posts marked done since a time (today's, for "Show done").
+
+        Args:
+            product_id: Product id.
+            since: Start of the window.
+
+        Returns:
+            The posts, most recently done first.
+        """
+        return await self._rows(
+            Post,
+            f"SELECT {POST_COLS} FROM posts p WHERE p.product_id = %s AND p.status = 'done' "
+            "AND p.done_at >= %s ORDER BY p.done_at DESC, p.id",
+            (product_id, since),
+        )
 
     async def recent_labelled(self, limit: int = 50) -> list[Post]:
         """The latest labelled posts of real (not demo) products.

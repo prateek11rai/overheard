@@ -42,7 +42,16 @@
   </section>
   {% endif %}
 
-  <p class="small dim" style="margin-top:44px">{{ brief.status }} · {{ brief.hidden }} off-topic hidden{% if brief.hidden %} · {% if show_hidden %}<a class="link" href="/p/{{ product.slug }}">Hide</a>{% else %}<a class="link" href="/p/{{ product.slug }}?show=hidden">Show</a>{% endif %}{% endif %} · <a class="link" href="/p/{{ product.slug }}/themes">Themes →</a> · <a class="link" href="/runs">Run log →</a></p>
+  <p class="small dim" style="margin-top:44px">{{ brief.status }} · {{ brief.hidden }} off-topic hidden{% if brief.hidden %} · {% if show_hidden %}<a class="link" href="/p/{{ product.slug }}">Hide</a>{% else %}<a class="link" href="/p/{{ product.slug }}?show=hidden">Show</a>{% endif %}{% endif %}{% if done_posts %} · {% if show_done %}<a class="link" href="/p/{{ product.slug }}">Hide done</a>{% else %}<a class="link" href="/p/{{ product.slug }}?show=done">Show done ({{ done_posts|length }})</a>{% endif %}{% endif %} · <a class="link" href="/p/{{ product.slug }}/themes">Themes →</a> · <a class="link" href="/runs">Run log →</a></p>
+
+  {% if show_done and done_posts %}
+  <section class="section">
+    <h2>Done today <span class="count">{{ done_posts|length }}</span></h2>
+    <div class="block">
+      {% for p in done_posts %}<div class="theme"><div class="row between"><span class="lbl {{ p.label }}">{{ label_name(p) }}</span><button class="btn sm" type="button" hx-post="/api/posts/{{ p.id }}/undo" hx-target="#main" hx-swap="innerHTML">Undo</button></div><a class="title" href="{{ p.url|safe_url }}" target="_blank" rel="noopener noreferrer" style="display:block;margin-top:6px">{{ p.title }}<span class="ext">↗</span></a></div>{% endfor %}
+    </div>
+  </section>
+  {% endif %}
 
   {% if show_hidden and hidden_posts %}
   <section class="section">
