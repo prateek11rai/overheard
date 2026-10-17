@@ -554,8 +554,10 @@ def test_a_product_never_checked_says_so_and_refreshes(client):
     page = client.get("/p/tidyshelf").text
     assert "Listening. The first check is running." in page
     assert 'hx-get="/api/brief/tidyshelf" hx-trigger="every 3s"' in page
-    fragment = client.get("/api/brief/tidyshelf", headers={"HX-Request": "true"}).text
+    assert "Checking…" in page
+    fragment = client.get("/api/brief/tidyshelf", headers=ask("/p/tidyshelf")).text
     assert 'id="brief-main"' in fragment and "first check is running" in fragment
+    assert 'id="bar"' not in fragment
 
     async def finish():
         async with Database(TEST_DSN, SCHEMA) as db:
@@ -565,8 +567,10 @@ def test_a_product_never_checked_says_so_and_refreshes(client):
             await db.finish_run(run.id, "done")
 
     asyncio.run(finish())
-    fragment = client.get("/api/brief/tidyshelf", headers={"HX-Request": "true"}).text
+    fragment = client.get("/api/brief/tidyshelf", headers=ask("/p/tidyshelf")).text
     assert "Nothing new about Tidyshelf" in fragment and "every 3s" not in fragment
+    assert 'id="bar" hx-swap-oob="true"' in fragment
+    assert "Check now" in fragment and "Checking…" not in fragment
 
 
 def test_undo_is_offered_only_where_it_reverses_something(client, monkeypatch):

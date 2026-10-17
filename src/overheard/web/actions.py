@@ -180,7 +180,8 @@ def register(app: FastAPI, web: Web) -> None:
         if product is None:
             return HTMLResponse("")
         ctx = await web._brief_ctx(request, product)
-        return web._fragment(request, "_brief_main.html", ctx, close_popovers=False)
+        oob = [] if ctx["brief"].waiting else ["_bar.html"]
+        return web._fragment(request, "_brief_main.html", ctx, oob=oob, close_popovers=False)
 
     @app.get("/api/runs/{run_id}/row", response_class=HTMLResponse)
     async def run_row(request: Request, run_id: int, sel: int | None = None) -> Response:
