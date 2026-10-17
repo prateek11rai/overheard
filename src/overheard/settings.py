@@ -109,3 +109,31 @@ def get_settings() -> Settings:
         The process-wide settings.
     """
     return Settings()
+
+
+def local_timezone() -> str:
+    """The machine's IANA timezone name, for the first morning schedule.
+
+    Returns:
+        A name such as `Asia/Kolkata`, or `UTC` when it can't be found.
+    """
+    import os
+    from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+
+    candidates = [os.environ.get("TZ", "")]
+    try:
+        target = os.path.realpath("/etc/localtime")
+        if "zoneinfo/" in target:
+            candidates.append(target.split("zoneinfo/", 1)[1])
+    except OSError:
+        pass
+    for name in candidates:
+        name = name.lstrip(":")
+        if not name:
+            continue
+        try:
+            ZoneInfo(name)
+            return name
+        except (ZoneInfoNotFoundError, ValueError):
+            continue
+    return "UTC"
