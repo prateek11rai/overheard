@@ -133,3 +133,35 @@ def test_phrase_cost_is_shared():
     assert phrase_cost(["a", "b", "c"], reddit_on=True, has_key=True) == 3
     assert phrase_cost(["a", "b", "c"], reddit_on=False, has_key=True) == 0
     assert phrase_cost(["a", "b", "c"], reddit_on=True, has_key=False) == 0
+
+
+def test_phrases_already_paid_today_are_free_and_never_rationed():
+    # cap 60 with 8 spent: 52 over 14 days = 3 a day, but 7 phrases were all searched today
+    acc = SerpApiAccount(plan_searches=250, searches_left=241, this_month_usage=9)
+    paid = {(1, p): TODAY for p in ["a1", "a2", "a3", "a4", "a5"]} | {(2, "b1"): TODAY}
+    plan = make_plan(
+        products(), acc, TODAY, used_month=8, monthly_cap=60, last_searched=paid, scheduled=False
+    )
+    assert plan.per_day == 3
+    assert plan.mode == "every"  # only b2 is unpaid, and it fits
+    assert plan.products[0].reddit_phrases == ["a1", "a2", "a3", "a4", "a5"]
+    assert plan.products[1].reddit_phrases == ["b1", "b2"]
+    paid[(2, "b2")] = TODAY
+    plan = make_plan(
+        products(), acc, TODAY, used_month=8, monthly_cap=60, last_searched=paid, scheduled=False
+    )
+    assert plan.mode == "every"
+    assert plan.reddit_searches == 7
+
+
+def test_only_unpaid_phrases_take_turns():
+    acc = SerpApiAccount(plan_searches=250, searches_left=241, this_month_usage=9)
+    yesterday = date(2026, 10, 17)
+    seen = {(1, "a1"): TODAY, (1, "a2"): TODAY, (1, "a3"): yesterday}
+    plan = make_plan(
+        products(), acc, TODAY, used_month=46, monthly_cap=60, last_searched=seen, scheduled=False
+    )
+    assert plan.per_day == 1  # 14 left over 14 days
+    chosen = {(p.id, ph) for p in plan.products for ph in p.reddit_phrases}
+    assert {(1, "a1"), (1, "a2")} <= chosen
+    assert len(chosen) == 3 and (1, "a3") not in chosen

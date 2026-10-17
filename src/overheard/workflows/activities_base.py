@@ -122,8 +122,11 @@ class ActivitiesBase:
         return plan
 
     async def _record_plan(self, run_id: int, plan: pipeline.SearchPlan) -> None:
+        today = await self._today()
+        last = await self.db.last_searched()
         for p in plan.products:
             n = len(p.reddit_phrases)
+            reused = sum(1 for ph in p.reddit_phrases if last.get((p.id, ph)) == today)
             if plan.mode == "off":
                 text = (
                     "Reddit off · no SerpApi key"
@@ -132,8 +135,13 @@ class ActivitiesBase:
                 )
             elif plan.mode == "used_up":
                 text = "Hacker News only · search plan used up"
+            elif n and reused == n:
+                text = f"{n} Reddit phrase{'s' if n != 1 else ''} · already searched today, reused"
             else:
-                text = f"{n} Reddit search{'es' if n != 1 else ''} planned"
+                new = n - reused
+                text = f"{new} Reddit search{'es' if new != 1 else ''} planned"
+                if reused:
+                    text += f" · {reused} reused from today"
                 if p.reddit_note:
                     text += f" · {p.reddit_note}"
             status = "warn" if plan.mode == "used_up" else "ok"

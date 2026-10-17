@@ -96,7 +96,7 @@ class SearchActivities(ActivitiesBase):
                 )
 
             try:
-                posts, _ = await pipeline.search_once(
+                posts, spent = await pipeline.search_once(
                     self.db,
                     run_key=args.run_key,
                     product_id=args.product_id,
@@ -112,6 +112,7 @@ class SearchActivities(ActivitiesBase):
         text = (
             f"Reddit · {args.phrase}{week}"
             + (" · retried" if retried else "")
+            + ("" if spent else " · reused from today")
             + f" · {len(posts)} posts"
         )
         await self.db.add_step(

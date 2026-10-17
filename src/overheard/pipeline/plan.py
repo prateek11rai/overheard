@@ -197,7 +197,8 @@ def make_plan(
 
     One Reddit search per phrase per morning if phrases × days left fits the searches left
     (scheduled runs keep a reserve for Run now and first checks); otherwise phrases take
-    turns, least recently searched first. Hacker News is free and always searches every
+    turns, least recently searched first. Phrases already searched today are free (the ledger
+    reuses them), so they are always planned and don't count against the day's searches. Hacker News is free and always searches every
     phrase. The numbers come from `reddit_budget`, the same function Settings uses.
 
     Args:
@@ -242,20 +243,25 @@ def make_plan(
         scheduled=scheduled,
     )
     per_day = budget.per_day if budget else 0
-    if total and per_day <= 0:
+    every_pair = [(p.id, ph) for p in reddit_products for ph in p.phrases]
+    # A phrase searched today is already paid for: any run reuses it, so it never takes turns.
+    paid = {pair for pair in every_pair if last_searched.get(pair) == today}
+    unpaid = len(every_pair) - len(paid)
+    if unpaid and per_day <= 0:
         return hn_only("used_up", "search plan used up")
 
-    if total <= per_day:
-        chosen = {(p.id, ph) for p in reddit_products for ph in p.phrases}
+    if unpaid <= per_day:
+        chosen = set(every_pair)
         mode: Literal["every", "rotate"] = "every"
         every = 1
     else:
         pairs = []
         for p in reddit_products:
             for turn, ph in enumerate(p.phrases):
-                pairs.append((last_searched.get((p.id, ph), date.min), turn, p.id, ph))
+                if (p.id, ph) not in paid:
+                    pairs.append((last_searched.get((p.id, ph), date.min), turn, p.id, ph))
         pairs.sort(key=lambda x: (x[0], x[1], x[2]))
-        chosen = {(pid, ph) for _, _, pid, ph in pairs[:per_day]}
+        chosen = paid | {(pid, ph) for _, _, pid, ph in pairs[:per_day]}
         mode = "rotate"
         every = math.ceil(total / per_day)
 
