@@ -1,7 +1,8 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 
-from overheard.web.context import DONE_MESSAGES, Web
+from overheard.web.context import DONE_MESSAGES
+from overheard.web.updates import Web
 
 
 def register(app: FastAPI, web: Web) -> None:

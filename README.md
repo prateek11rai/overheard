@@ -56,7 +56,7 @@ uv run overheard doctor       # ✓/✗ for every piece
 uv run overheard start        # Temporal + worker + web; open http://127.0.0.1:8000
 ```
 
-`.env` needs one line to start; the other settings are optional:
+`.env.example` has six settings; only `DATABASE_URL` is needed to start, the other five are optional:
 
 ```dotenv
 DATABASE_URL=postgresql://user:password@host:5432/db?sslmode=require

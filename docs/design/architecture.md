@@ -60,7 +60,7 @@ overheard/
 ├── pyproject.toml        dependencies, the `overheard` command, uv settings
 ├── uv.lock               exact versions (committed)
 ├── .python-version       3.13 (committed; uv and CI read it)
-├── .env.example          the 5 settings people actually fill (§9)
+├── .env.example          the 6 settings people actually fill (§9)
 ├── Dockerfile            one image for web and worker (§10)
 ├── compose.yaml          the app plus Postgres, Temporal and Ollama, for anyone deploying (§10)
 ├── .dockerignore · .gitignore
@@ -375,7 +375,7 @@ Trends use TimescaleDB's `time_bucket` when present (Tiger) and `date_trunc('wee
 3. Screenshot of the brief (`docs/img/brief.png`).
 4. **Why:** people pay for this today (spec §2 numbers with sources); GummySearch closes for good on 1 Dec 2026; this is the open, self-hosted version.
 5. **How it works:** the diagram from §1 in plain words, the morning job, the quote check.
-6. **Quick start:** `uv run overheard setup` → `doctor` → `start`, with prerequisites (Homebrew: uv, Python 3.13, temporal, ollama) and the 5-line `.env`.
+6. **Quick start:** `uv run overheard setup` → `doctor` → `start`, with prerequisites (Homebrew: uv, Python 3.13, temporal, ollama) and the 6-line `.env`.
 7. **Screens:** a 2×2 grid of screenshots (brief, review, themes, settings) and the email.
 8. **Models:** swapping, adding, the comparison table from a real `overheard eval --markdown` run.
 9. **Deploy:** compose in four lines, link to RUNBOOK.

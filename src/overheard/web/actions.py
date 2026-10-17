@@ -13,8 +13,8 @@ from overheard.ai import (
     role_models,
 )
 from overheard.settings import is_timezone
-from overheard.web.context import Web
 from overheard.web.security import csv_safe, parse_emails, slugify
+from overheard.web.updates import Web
 
 
 def register(app: FastAPI, web: Web) -> None:

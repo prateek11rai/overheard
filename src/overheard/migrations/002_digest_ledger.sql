@@ -1,5 +1,3 @@
--- One row per (run, product) digest that was sent or saved, so a retried send_digest never
--- sends the same morning email twice.
 CREATE TABLE digest_ledger (
     idempotency_key text PRIMARY KEY,
     run_key text NOT NULL,

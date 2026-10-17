@@ -104,7 +104,7 @@ Not entered: Render, .tech and DigitalOcean (no hosting), ElevenLabs (790 charac
 ## 10. Security and privacy
 
 - Binds to 127.0.0.1. It refuses any other address unless `OVERHEARD_PASSWORD` is set, so a deployment is never open by accident (architecture §10).
-- Configuration comes from environment variables (a `.env` file locally); only five are needed (architecture §9). Secrets never leave the environment; the UI shows whether each is set, never the value. Logs never print keys.
+- Configuration comes from environment variables (a `.env` file locally); only six are needed (architecture §9). Secrets never leave the environment; the UI shows whether each is set, never the value. Logs never print keys.
 - Posts are untrusted input to the model: wrapped as data, labels come from a fixed enum, outputs are schema-validated, quotes are verified, the model gets no tools, and post text is HTML-escaped in the UI and email. A prompt-injection post is part of the test set.
 - Stores only title, snippet or text, URL, community and date; no usernames.
 - Nothing is ever posted anywhere. Drafts are copy-only and the prompt adds a "I built this" disclosure.

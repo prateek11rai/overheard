@@ -1,5 +1,3 @@
--- Runs with search_path set to the app schema first, then public (where pgvector lives).
-
 CREATE TABLE products (
     id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     slug text NOT NULL UNIQUE,

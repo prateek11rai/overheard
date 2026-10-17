@@ -9,8 +9,9 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 from overheard.db import Database
 from overheard.settings import Settings, get_settings
 from overheard.web import actions, pages
-from overheard.web.context import STATIC_DIR, TEMPLATES_DIR, Web
+from overheard.web.context import STATIC_DIR, TEMPLATES_DIR
 from overheard.web.security import SecurityMiddleware, parse_emails, safe_url, slugify
+from overheard.web.updates import Web
 
 __all__ = ["SecurityMiddleware", "create_app", "parse_emails", "safe_url", "slugify"]
 
