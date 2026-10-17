@@ -1,4 +1,4 @@
-{% from "_macros.html" import post_card, qline %}<div id="brief-main"{% if oob %} hx-swap-oob="true"{% endif %}>
+{% from "_macros.html" import post_card, qline %}<div id="brief-main"{% if oob %} hx-swap-oob="true"{% endif %}{% if brief.waiting %} hx-get="/api/brief/{{ product.slug }}" hx-trigger="every 3s" hx-swap="outerHTML"{% endif %}>
   <h1>{{ brief.headline }}</h1>
   <p class="sub">{{ brief.subline }}</p>
   {% if brief.total %}<div class="row" style="margin-top:26px"><a class="btn primary big" href="/p/{{ product.slug }}/review">Go through all {{ brief.total }}</a></div>{% endif %}

@@ -216,6 +216,7 @@ class WebCore:
         toast: str | None = None,
         undo: str | None = None,
         oob: list[str] | None = None,
+        close_popovers: bool = True,
     ) -> HTMLResponse:
         parts = []
         if name:
@@ -234,7 +235,8 @@ class WebCore:
         if "title_count" in ctx:
             n = ctx["title_count"]
             trigger["title"] = {"value": f"({n}) overheard" if n else "overheard"}
-        trigger["closePopovers"] = True
+        if close_popovers:
+            trigger["closePopovers"] = True
         response.headers["HX-Trigger"] = json.dumps(trigger)
         if name is None:
             response.headers["HX-Reswap"] = "none"

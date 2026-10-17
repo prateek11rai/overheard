@@ -174,6 +174,14 @@ def register(app: FastAPI, web: Web) -> None:
         oob = ["_bar.html", "_runs_main.html"]
         return web._fragment(request, None, ctx, toast="Morning brief started", oob=oob)
 
+    @app.get("/api/brief/{slug}", response_class=HTMLResponse)
+    async def brief_fragment(request: Request, slug: str) -> Response:
+        product = await web._db().product_by_slug(slug)
+        if product is None:
+            return HTMLResponse("")
+        ctx = await web._brief_ctx(request, product)
+        return web._fragment(request, "_brief_main.html", ctx, close_popovers=False)
+
     @app.get("/api/runs/{run_id}/row", response_class=HTMLResponse)
     async def run_row(request: Request, run_id: int, sel: int | None = None) -> Response:
         r = await web._db().run(run_id)

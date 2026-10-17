@@ -68,6 +68,7 @@ class Brief:
     hidden: int
     status: str
     order: list[int]
+    waiting: bool = False
 
 
 def age_text(then: datetime | None, now: datetime) -> str:
@@ -286,12 +287,29 @@ async def brief_for(
     else:
         sub = "Not checked yet" if not posts else f"{len(posts)} posts in the last 7 days"
         status = "Not checked yet"
-    if product.paused:
+    head = headline(product, len(asks), len(pains), len(mentions))
+    waiting = False
+    if not last and not posts:
+        running = [
+            r
+            for r in await db.running_runs()
+            if r.kind == "morning" or (r.kind == "check" and r.product_id == product.id)
+        ]
+        if product.paused:
+            head, sub = f"{product.name} is paused.", "Resume it from the ▾ menu to listen again."
+        elif running and not product.demo:
+            head, sub, waiting = "Listening. The first check is running.", "", True
+            sub = "Posts show up here when it finishes."
+            status = "First check running"
+        else:
+            head = "Listening. Not checked yet."
+            sub = "The first check runs at the morning time, or use Check now in the ▾ menu."
+    elif product.paused:
         sub = "Paused · " + sub
     ordered = asks + pains + mentions
     return Brief(
         product=product,
-        headline=headline(product, len(asks), len(pains), len(mentions)),
+        headline=head,
         subline=sub,
         total=len(cards),
         cards=ordered,
@@ -302,4 +320,5 @@ async def brief_for(
         hidden=hidden,
         status=status,
         order=[c.post.id for c in ordered],
+        waiting=waiting,
     )

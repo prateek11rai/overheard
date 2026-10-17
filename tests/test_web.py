@@ -96,7 +96,7 @@ def test_every_page_renders_with_demo_data(client):
         < themes.index("Recipes ignore")
         < themes.index("Planning takes")
     )
-    assert "Nothing new about Plantpal" in client.get("/p/demo-plantpal").text
+    assert "Plantpal is paused." in client.get("/p/demo-plantpal").text
 
 
 def test_security_headers_and_home_redirect(client):
@@ -184,7 +184,7 @@ def test_add_edit_and_delete_a_product(client):
     )
     assert r.status_code == 303 and r.headers["location"].startswith("/p/mealwise")
     page = client.get("/p/mealwise").text
-    assert "Nothing new about Mealwise since yesterday." in page
+    assert "Listening. Not checked yet." in page
     assert page.count(">Mealwise<") == 2
     pid = re.search(r"/products/(\d+)/edit", client.get("/settings").text).group(1)
     form = client.get(f"/products/{pid}/edit").text
@@ -528,3 +528,33 @@ def test_theme_counts_name_their_window(client):
     assert "↑ 14 posts" not in themes
     brief = client.get("/p/demo-mealwise").text
     assert "↑ 14 in 4 weeks" in brief
+
+
+def test_a_product_never_checked_says_so_and_refreshes(client):
+    client.post("/products", data={"name": "Tidyshelf", "phrases": ["a b c"]}, headers=ORIGIN)
+    page = client.get("/p/tidyshelf").text
+    assert "Listening. Not checked yet." in page
+    assert "Nothing new about Tidyshelf" not in page
+
+    async def start_check():
+        async with Database(TEST_DSN, SCHEMA) as db:
+            product = await db.product_by_slug("tidyshelf")
+            await db.upsert_run("check-tidyshelf-1", "check", product.id)
+
+    asyncio.run(start_check())
+    page = client.get("/p/tidyshelf").text
+    assert "Listening. The first check is running." in page
+    assert 'hx-get="/api/brief/tidyshelf" hx-trigger="every 3s"' in page
+    fragment = client.get("/api/brief/tidyshelf", headers={"HX-Request": "true"}).text
+    assert 'id="brief-main"' in fragment and "first check is running" in fragment
+
+    async def finish():
+        async with Database(TEST_DSN, SCHEMA) as db:
+            run = await db.run_by_workflow("check-tidyshelf-1")
+            product = await db.product_by_slug("tidyshelf")
+            await db.add_step(run.id, "plan", "planned", product_id=product.id)
+            await db.finish_run(run.id, "done")
+
+    asyncio.run(finish())
+    fragment = client.get("/api/brief/tidyshelf", headers={"HX-Request": "true"}).text
+    assert "Nothing new about Tidyshelf" in fragment and "every 3s" not in fragment
