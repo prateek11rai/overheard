@@ -29,6 +29,8 @@ Chromium through Playwright, 1440 px wide, against `uv run overheard start` with
 
 Re-checked after the package split: Done/Undo, Pause/Resume, time pick, Run now, review S/Undo.
 
+CLI, live: `overheard brief` (0 products with demo only; `--reddit off` with `seed`'s two real products ran both scans offline), `seed` (idempotent), `email-test` (file mode writes a test email), `eval`, `demo load/clear`, `setup`, `doctor`, `start` (Ctrl-C stops all children, exit 0). The seeded products and test runs were removed afterwards.
+
 ## Acceptance (phase 1)
 
 1. ✓ Fresh clone (scratch dir): `uv sync --frozen` and `uv run overheard setup` work; leak check clean.
