@@ -567,3 +567,24 @@ def test_a_product_never_checked_says_so_and_refreshes(client):
     asyncio.run(finish())
     fragment = client.get("/api/brief/tidyshelf", headers={"HX-Request": "true"}).text
     assert "Nothing new about Tidyshelf" in fragment and "every 3s" not in fragment
+
+
+def test_undo_is_offered_only_where_it_reverses_something(client, monkeypatch):
+    fake = FakeTemporal()
+
+    async def connect(_settings):
+        return fake
+
+    monkeypatch.setattr("overheard.workflows.connect", connect)
+    r = client.post("/api/runs/now", headers=ask("/runs"))
+    assert "undo" not in json.loads(r.headers["HX-Trigger"])["toast"]
+    page = client.get("/settings").text
+    pid = re.search(r"/api/products/(\d+)/pause", page).group(1)
+    r = client.post(f"/api/products/{pid}/pause", headers=ask("/settings"))
+    assert "undo" not in json.loads(r.headers["HX-Trigger"])["toast"]
+    brief = client.get("/p/demo-mealwise").text
+    post = re.search(r'data-post="(\d+)"', brief).group(1)
+    r = client.post(f"/api/posts/{post}/done", headers=ask("/p/demo-mealwise"))
+    assert json.loads(r.headers["HX-Trigger"])["toast"]["undo"] == f"/api/posts/{post}/undo"
+    r = client.post(f"/api/posts/{post}/undo", headers=ask("/p/demo-mealwise"))
+    assert "undo" not in json.loads(r.headers["HX-Trigger"])["toast"]

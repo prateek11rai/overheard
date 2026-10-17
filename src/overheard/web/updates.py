@@ -58,10 +58,9 @@ class Web(Views):
         show = post_id if action == "undo" else None
         response = await self._post_view(request, post_id, pos, show)
         trigger = json.loads(response.headers["HX-Trigger"])
-        trigger["toast"] = {
-            "text": message,
-            "undo": None if action == "undo" else f"/api/posts/{post_id}/undo",
-        }
+        trigger["toast"] = {"text": message}
+        if action != "undo":
+            trigger["toast"]["undo"] = f"/api/posts/{post_id}/undo"
         response.headers["HX-Trigger"] = json.dumps(trigger)
         return response
 

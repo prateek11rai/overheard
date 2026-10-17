@@ -231,7 +231,7 @@ class WebCore:
         response = HTMLResponse("".join(parts))
         trigger: dict[str, Any] = {}
         if toast:
-            trigger["toast"] = {"text": toast, "undo": undo}
+            trigger["toast"] = {"text": toast, **({"undo": undo} if undo else {})}
         if "title_count" in ctx:
             n = ctx["title_count"]
             trigger["title"] = {"value": f"({n}) overheard" if n else "overheard"}
